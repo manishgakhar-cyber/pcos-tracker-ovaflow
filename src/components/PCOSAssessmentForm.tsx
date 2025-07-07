@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -9,8 +8,9 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Progress } from '@/components/ui/progress';
-import { ArrowRight, ArrowLeft, Heart, User, Calendar, Stethoscope } from 'lucide-react';
+import { ArrowRight, ArrowLeft, Heart, User, Calendar, Stethoscope, AlertTriangle, CheckCircle, Info } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { PCOSResults } from './PCOSResults';
 
 interface AssessmentData {
   // Personal Details
@@ -42,6 +42,7 @@ interface AssessmentData {
 
 export const PCOSAssessmentForm = () => {
   const [currentStep, setCurrentStep] = useState(1);
+  const [showResults, setShowResults] = useState(false);
   const [formData, setFormData] = useState<AssessmentData>({
     age: '',
     height: '',
@@ -114,14 +115,42 @@ export const PCOSAssessmentForm = () => {
   };
 
   const handleSubmit = () => {
-    // Here you would typically send the data to your PCOS prediction model
     console.log('Assessment Data:', formData);
     toast({
       title: "Assessment Complete!",
       description: "Your PCOS risk assessment has been submitted. Analyzing your results...",
     });
-    // You could navigate to results page or dashboard here
+    setShowResults(true);
   };
+
+  const handleRetakeAssessment = () => {
+    setShowResults(false);
+    setCurrentStep(1);
+    setFormData({
+      age: '',
+      height: '',
+      weight: '',
+      ethnicity: '',
+      cycleLength: '',
+      periodFrequency: '',
+      lastPeriodDate: '',
+      flowIntensity: '',
+      irregularPeriods: '',
+      symptoms: [],
+      acneSeverity: '',
+      hairGrowth: '',
+      hairLoss: '',
+      weightChanges: '',
+      moodSymptoms: [],
+      familyHistory: '',
+      medications: '',
+      additionalNotes: ''
+    });
+  };
+
+  if (showResults) {
+    return <PCOSResults assessmentData={formData} onRetakeAssessment={handleRetakeAssessment} />;
+  }
 
   const renderStep = () => {
     switch (currentStep) {
