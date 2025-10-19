@@ -195,22 +195,22 @@ export const PCOSAssessmentForm = () => {
               </div>
               
               <div>
-                <Label htmlFor="height">Height (cm)</Label>
+                <Label htmlFor="height">Height (inches)</Label>
                 <Input
                   id="height"
                   type="number"
-                  placeholder="e.g., 165"
+                  placeholder="e.g., 65"
                   value={formData.height}
                   onChange={(e) => handleInputChange('height', e.target.value)}
                 />
               </div>
               
               <div>
-                <Label htmlFor="weight">Weight (kg)</Label>
+                <Label htmlFor="weight">Weight (lbs)</Label>
                 <Input
                   id="weight"
                   type="number"
-                  placeholder="e.g., 60"
+                  placeholder="e.g., 130"
                   value={formData.weight}
                   onChange={(e) => handleInputChange('weight', e.target.value)}
                 />
