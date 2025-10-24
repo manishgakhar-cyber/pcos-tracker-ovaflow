@@ -29,9 +29,10 @@ interface AssessmentData {
 interface PCOSResultsProps {
   assessmentData: AssessmentData;
   onRetakeAssessment: () => void;
+  onComplete?: () => void;
 }
 
-export const PCOSResults = ({ assessmentData, onRetakeAssessment }: PCOSResultsProps) => {
+export const PCOSResults = ({ assessmentData, onRetakeAssessment, onComplete }: PCOSResultsProps) => {
   // Calculate PCOS risk score based on assessment data
   const calculateRiskScore = () => {
     let score = 0;
@@ -334,7 +335,10 @@ export const PCOSResults = ({ assessmentData, onRetakeAssessment }: PCOSResultsP
             <span>Retake Assessment</span>
           </Button>
           
-          <Button className="bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 flex items-center space-x-2">
+          <Button 
+            onClick={onComplete}
+            className="bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 flex items-center space-x-2"
+          >
             <Calendar className="w-4 h-4" />
             <span>Start Tracking Your Cycle</span>
           </Button>

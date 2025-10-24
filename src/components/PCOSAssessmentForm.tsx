@@ -15,6 +15,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { supabase } from '@/integrations/supabase/client';
 
 // Validation schema with comprehensive rules
 const assessmentSchema = z.object({
@@ -84,10 +85,15 @@ const step2Schema = assessmentSchema.pick({ periodFrequency: true, cycleLength: 
 const step3Schema = assessmentSchema.pick({ symptoms: true, acneSeverity: true, hairGrowth: true, hairLoss: true, weightChanges: true, moodSymptoms: true });
 const step4Schema = assessmentSchema.pick({ familyHistory: true, medications: true, additionalNotes: true });
 
-export const PCOSAssessmentForm = () => {
+interface PCOSAssessmentFormProps {
+  onComplete?: () => void;
+}
+
+export const PCOSAssessmentForm = ({ onComplete }: PCOSAssessmentFormProps = {}) => {
   const [currentStep, setCurrentStep] = useState(1);
   const [showResults, setShowResults] = useState(false);
   const { toast } = useToast();
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<AssessmentData>({
     resolver: zodResolver(assessmentSchema),
@@ -224,8 +230,29 @@ export const PCOSAssessmentForm = () => {
     }
   };
 
+  const calculateRiskScore = (data: AssessmentData): number => {
+    let score = 0;
+    
+    if (data.periodFrequency === 'irregular' || data.periodFrequency === 'infrequent') score += 20;
+    if (data.periodFrequency === 'absent') score += 30;
+    if (data.irregularPeriods === 'yes') score += 15;
+    if (data.symptoms.length >= 3) score += 15;
+    if (data.acneSeverity === 'moderate' || data.acneSeverity === 'severe') score += 10;
+    if (data.hairGrowth === 'yes') score += 10;
+    if (data.weightChanges === 'gain') score += 5;
+    if (data.familyHistory === 'yes') score += 10;
+    
+    return Math.min(score, 100);
+  };
+
+  const getRiskLevel = (score: number): string => {
+    if (score < 30) return 'Low';
+    if (score < 60) return 'Moderate';
+    return 'High';
+  };
+
   const handleSubmit = async () => {
-    const isValid = await form.trigger(); // Validate all fields
+    const isValid = await form.trigger();
     
     if (!isValid) {
       toast({
@@ -236,13 +263,46 @@ export const PCOSAssessmentForm = () => {
       return;
     }
 
+    setIsSubmitting(true);
     const formData = form.getValues();
-    // Data is now validated and safe to use
-    toast({
-      title: "Assessment Complete!",
-      description: "Your PCOS risk assessment has been submitted. Analyzing your results...",
-    });
-    setShowResults(true);
+    
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        throw new Error('No authenticated user found');
+      }
+
+      const riskScore = calculateRiskScore(formData);
+      const riskLevel = getRiskLevel(riskScore);
+
+      const { error } = await supabase
+        .from('pcos_assessments')
+        .insert([{
+          user_id: user.id,
+          assessment_data: formData as any,
+          risk_score: riskScore,
+          risk_level: riskLevel
+        }]);
+
+      if (error) throw error;
+
+      toast({
+        title: "Assessment Complete!",
+        description: "Your PCOS risk assessment has been saved. Analyzing your results...",
+      });
+      
+      setShowResults(true);
+    } catch (error) {
+      console.error('Error saving assessment:', error);
+      toast({
+        title: "Error",
+        description: "Failed to save assessment. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleRetakeAssessment = () => {
@@ -252,7 +312,13 @@ export const PCOSAssessmentForm = () => {
   };
 
   if (showResults) {
-    return <PCOSResults assessmentData={form.getValues()} onRetakeAssessment={handleRetakeAssessment} />;
+    return (
+      <PCOSResults 
+        assessmentData={form.getValues()} 
+        onRetakeAssessment={handleRetakeAssessment}
+        onComplete={onComplete}
+      />
+    );
   }
 
   const renderStep = () => {
@@ -720,9 +786,10 @@ export const PCOSAssessmentForm = () => {
               ) : (
                 <Button
                   onClick={handleSubmit}
+                  disabled={isSubmitting}
                   className="bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 flex items-center space-x-2"
                 >
-                  <span>Complete Assessment</span>
+                  <span>{isSubmitting ? 'Saving...' : 'Complete Assessment'}</span>
                   <Heart className="w-4 h-4" />
                 </Button>
               )}
