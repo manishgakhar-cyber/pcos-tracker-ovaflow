@@ -12,6 +12,7 @@ import { CalendarIcon, Save } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
+import { z } from 'zod';
 
 export const SymptomTracker = () => {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
@@ -72,14 +73,76 @@ export const SymptomTracker = () => {
     );
   };
 
+  const customSymptomSchema = z.string()
+    .min(2, 'Symptom name must be at least 2 characters')
+    .max(50, 'Symptom name must be less than 50 characters')
+    .regex(/^[a-zA-Z\s\-']+$/, 'Only letters, spaces, hyphens, and apostrophes allowed');
+
+  const notesSchema = z.string().max(500, 'Notes must be less than 500 characters');
+
   const addCustomSymptom = () => {
-    if (customSymptom.trim() && !selectedSymptoms.includes(customSymptom.trim())) {
-      setSelectedSymptoms(prev => [...prev, customSymptom.trim()]);
-      setCustomSymptom('');
+    const trimmed = customSymptom.trim();
+    
+    if (!trimmed) {
+      return;
     }
+
+    // Check max custom symptoms limit
+    const customSymptomsCount = selectedSymptoms.filter(s => 
+      !Object.values(symptomCategories).flat().includes(s)
+    ).length;
+    
+    if (customSymptomsCount >= 10) {
+      toast({
+        title: 'Limit Reached',
+        description: 'You can only add up to 10 custom symptoms',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    // Validate custom symptom
+    try {
+      customSymptomSchema.parse(trimmed);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        toast({
+          title: 'Invalid Input',
+          description: error.errors[0].message,
+          variant: 'destructive',
+        });
+        return;
+      }
+    }
+
+    if (selectedSymptoms.includes(trimmed)) {
+      toast({
+        title: 'Duplicate Symptom',
+        description: 'This symptom is already added',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setSelectedSymptoms(prev => [...prev, trimmed]);
+    setCustomSymptom('');
   };
 
   const handleSave = () => {
+    // Validate notes
+    try {
+      notesSchema.parse(notes);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        toast({
+          title: 'Invalid Notes',
+          description: error.errors[0].message,
+          variant: 'destructive',
+        });
+        return;
+      }
+    }
+
     // In a real app, this would save to a database
     toast({
       title: "Symptoms logged successfully!",
@@ -187,15 +250,19 @@ export const SymptomTracker = () => {
               <Label className="text-sm font-medium">Add Custom Symptom</Label>
               <div className="flex gap-2 mt-2">
                 <Input
-                  placeholder="Enter custom symptom..."
+                  placeholder="Enter custom symptom (max 50 chars)..."
                   value={customSymptom}
                   onChange={(e) => setCustomSymptom(e.target.value)}
                   onKeyPress={(e) => e.key === 'Enter' && addCustomSymptom()}
+                  maxLength={50}
                 />
                 <Button onClick={addCustomSymptom} size="sm">
                   Add
                 </Button>
               </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                Only letters, spaces, hyphens, and apostrophes (2-50 characters, max 10 custom)
+              </p>
             </div>
 
             {/* Notes */}
@@ -205,12 +272,16 @@ export const SymptomTracker = () => {
               </Label>
               <Textarea
                 id="notes"
-                placeholder="Any additional notes about how you're feeling..."
+                placeholder="Any additional notes about how you're feeling (max 500 chars)..."
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
                 className="mt-2"
                 rows={3}
+                maxLength={500}
               />
+              <p className="text-xs text-muted-foreground mt-1">
+                {notes.length}/500 characters
+              </p>
             </div>
 
             {/* Selected Symptoms Summary */}

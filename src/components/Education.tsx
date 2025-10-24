@@ -219,15 +219,21 @@ export const Education = () => {
                           </Badge>
                         </div>
                         <p className="text-sm text-blue-700">{resource.description}</p>
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          className="w-full border-blue-300 text-blue-700 hover:bg-blue-100"
-                          onClick={() => window.open(resource.url, '_blank')}
+                        <a 
+                          href={resource.url} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="block w-full"
                         >
-                          <ExternalLink className="w-3 h-3 mr-1" />
-                          Visit Resource
-                        </Button>
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="w-full border-blue-300 text-blue-700 hover:bg-blue-100"
+                          >
+                            <ExternalLink className="w-3 h-3 mr-1" />
+                            Visit Resource
+                          </Button>
+                        </a>
                       </div>
                     </CardContent>
                   </Card>
