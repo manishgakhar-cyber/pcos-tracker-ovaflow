@@ -88,7 +88,6 @@ Provide your analysis.`;
           { role: "system", content: systemPrompt },
           { role: "user", content: userPrompt }
         ],
-        temperature: 0.3, // Lower temperature for more consistent medical analysis
       }),
     });
 

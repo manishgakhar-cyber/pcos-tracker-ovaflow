@@ -267,9 +267,16 @@ export const PCOSAssessmentForm = ({ onComplete, isEdit = false }: PCOSAssessmen
       );
 
       if (analysisError) {
+        console.error('Analysis error:', analysisError);
         throw analysisError;
       }
 
+      if (!analysisData) {
+        console.error('No analysis data returned');
+        throw new Error('No analysis data returned from AI');
+      }
+
+      console.log('Analysis data:', analysisData);
       const { riskScore, riskLevel } = analysisData;
 
       // If editing, update existing assessment, otherwise insert new one
@@ -307,9 +314,11 @@ export const PCOSAssessmentForm = ({ onComplete, isEdit = false }: PCOSAssessmen
       
       setShowResults(true);
     } catch (error) {
+      console.error('Assessment submission error:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to save assessment. Please try again.';
       toast({
         title: "Error",
-        description: "Failed to save assessment. Please try again.",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
