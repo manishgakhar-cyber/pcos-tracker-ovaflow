@@ -15,6 +15,7 @@ const Index = () => {
   const [user, setUser] = useState<User | null>(null);
   const [hasCompletedAssessment, setHasCompletedAssessment] = useState<boolean | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [showAssessmentForm, setShowAssessmentForm] = useState(false);
 
   useEffect(() => {
     const initializeAuth = async () => {
@@ -66,7 +67,12 @@ const Index = () => {
   const handleAssessmentComplete = async () => {
     if (user) {
       await checkAssessmentStatus(user.id);
+      setShowAssessmentForm(false);
     }
+  };
+
+  const handleEditAssessment = () => {
+    setShowAssessmentForm(true);
   };
 
   const handleLogout = async () => {
@@ -82,14 +88,23 @@ const Index = () => {
     );
   }
 
-  // Show assessment form if not completed
-  if (hasCompletedAssessment === false) {
+  // Show assessment form if not completed OR if user wants to edit
+  if (hasCompletedAssessment === false || showAssessmentForm) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-pink-50 to-purple-50">
         <div className="container mx-auto px-4 py-6">
           <div className="text-center mb-8">
             <div className="flex justify-between items-center mb-2">
-              <div className="flex-1" />
+              <div className="flex-1">
+                {showAssessmentForm && hasCompletedAssessment && (
+                  <Button 
+                    variant="ghost" 
+                    onClick={() => setShowAssessmentForm(false)}
+                  >
+                    ← Back to Dashboard
+                  </Button>
+                )}
+              </div>
               <h1 className="text-4xl font-bold text-purple-800 flex-1">CycleWise</h1>
               <div className="flex-1 flex justify-end">
                 <Button variant="outline" onClick={handleLogout}>
@@ -97,13 +112,20 @@ const Index = () => {
                 </Button>
               </div>
             </div>
-            <p className="text-purple-600">Complete your PCOS risk assessment to get started</p>
+            <p className="text-purple-600">
+              {showAssessmentForm && hasCompletedAssessment 
+                ? 'Update your PCOS risk assessment' 
+                : 'Complete your PCOS risk assessment to get started'}
+            </p>
             {user && (
               <p className="text-sm text-purple-500 mt-1">{user.email}</p>
             )}
           </div>
           
-          <PCOSAssessmentForm onComplete={handleAssessmentComplete} />
+          <PCOSAssessmentForm 
+            onComplete={handleAssessmentComplete}
+            isEdit={showAssessmentForm && hasCompletedAssessment === true}
+          />
         </div>
       </div>
     );
@@ -138,7 +160,7 @@ const Index = () => {
           </TabsList>
           
           <TabsContent value="dashboard">
-            <Dashboard />
+            <Dashboard onEditAssessment={handleEditAssessment} />
           </TabsContent>
           
           <TabsContent value="tracker">

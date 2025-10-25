@@ -2,12 +2,13 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
+import { Button } from '@/components/ui/button';
 import { Calendar, TrendingUp, AlertTriangle, Heart } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useEffect, useState } from 'react';
 import { differenceInDays, addDays } from 'date-fns';
 
-export const Dashboard = () => {
+export const Dashboard = ({ onEditAssessment }: { onEditAssessment?: () => void }) => {
   const [loading, setLoading] = useState(true);
   const [cycleData, setCycleData] = useState<any>(null);
   const [riskData, setRiskData] = useState<any>(null);
@@ -240,6 +241,25 @@ export const Dashboard = () => {
           </CardContent>
         </Card>
       )}
+
+      {/* Edit Assessment Option */}
+      <Card className="bg-gradient-to-br from-pink-50 to-purple-50 border-pink-200">
+        <CardContent className="pt-6">
+          <div className="flex items-center justify-between">
+            <div className="space-y-1">
+              <h3 className="font-semibold text-gray-900">Need to update your assessment?</h3>
+              <p className="text-sm text-gray-600">Retake your PCOS risk assessment if your symptoms have changed</p>
+            </div>
+            <Button 
+              variant="outline" 
+              onClick={onEditAssessment}
+              className="ml-4"
+            >
+              Edit Assessment
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 };

@@ -87,9 +87,10 @@ const step4Schema = assessmentSchema.pick({ familyHistory: true, medications: tr
 
 interface PCOSAssessmentFormProps {
   onComplete?: () => void;
+  isEdit?: boolean;
 }
 
-export const PCOSAssessmentForm = ({ onComplete }: PCOSAssessmentFormProps = {}) => {
+export const PCOSAssessmentForm = ({ onComplete, isEdit = false }: PCOSAssessmentFormProps = {}) => {
   const [currentStep, setCurrentStep] = useState(1);
   const [showResults, setShowResults] = useState(false);
   const { toast } = useToast();
@@ -230,27 +231,6 @@ export const PCOSAssessmentForm = ({ onComplete }: PCOSAssessmentFormProps = {})
     }
   };
 
-  const calculateRiskScore = (data: AssessmentData): number => {
-    let score = 0;
-    
-    if (data.periodFrequency === 'irregular' || data.periodFrequency === 'infrequent') score += 20;
-    if (data.periodFrequency === 'absent') score += 30;
-    if (data.irregularPeriods === 'yes') score += 15;
-    if (data.symptoms.length >= 3) score += 15;
-    if (data.acneSeverity === 'moderate' || data.acneSeverity === 'severe') score += 10;
-    if (data.hairGrowth === 'yes') score += 10;
-    if (data.weightChanges === 'gain') score += 5;
-    if (data.familyHistory === 'yes') score += 10;
-    
-    return Math.min(score, 100);
-  };
-
-  const getRiskLevel = (score: number): string => {
-    if (score < 30) return 'Low';
-    if (score < 60) return 'Moderate';
-    return 'High';
-  };
-
   const handleSubmit = async () => {
     const isValid = await form.trigger();
     
@@ -273,28 +253,60 @@ export const PCOSAssessmentForm = ({ onComplete }: PCOSAssessmentFormProps = {})
         throw new Error('No authenticated user found');
       }
 
-      const riskScore = calculateRiskScore(formData);
-      const riskLevel = getRiskLevel(riskScore);
+      // Use AI to analyze the assessment
+      toast({
+        title: "Analyzing...",
+        description: "Our AI is analyzing your assessment data with medical databases...",
+      });
 
-      const { error } = await supabase
-        .from('pcos_assessments')
-        .insert([{
-          user_id: user.id,
-          assessment_data: formData as any,
-          risk_score: riskScore,
-          risk_level: riskLevel
-        }]);
+      const { data: analysisData, error: analysisError } = await supabase.functions.invoke(
+        'analyze-pcos-assessment',
+        {
+          body: { assessmentData: formData }
+        }
+      );
 
-      if (error) throw error;
+      if (analysisError) {
+        throw analysisError;
+      }
+
+      const { riskScore, riskLevel } = analysisData;
+
+      // If editing, update existing assessment, otherwise insert new one
+      if (isEdit) {
+        const { error: updateError } = await supabase
+          .from('pcos_assessments')
+          .update({
+            assessment_data: formData as any,
+            risk_score: riskScore,
+            risk_level: riskLevel,
+            updated_at: new Date().toISOString()
+          })
+          .eq('user_id', user.id);
+
+        if (updateError) throw updateError;
+      } else {
+        const { error: insertError } = await supabase
+          .from('pcos_assessments')
+          .insert([{
+            user_id: user.id,
+            assessment_data: formData as any,
+            risk_score: riskScore,
+            risk_level: riskLevel
+          }]);
+
+        if (insertError) throw insertError;
+      }
 
       toast({
         title: "Assessment Complete!",
-        description: "Your PCOS risk assessment has been saved. Analyzing your results...",
+        description: isEdit 
+          ? "Your PCOS risk assessment has been updated successfully."
+          : "Your PCOS risk assessment has been saved successfully.",
       });
       
       setShowResults(true);
     } catch (error) {
-      console.error('Error saving assessment:', error);
       toast({
         title: "Error",
         description: "Failed to save assessment. Please try again.",
