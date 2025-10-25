@@ -117,8 +117,14 @@ Provide your analysis.`;
       throw new Error("No content in AI response");
     }
 
+    // Sanitize content - remove markdown code blocks if present
+    let cleanContent = content.trim();
+    if (cleanContent.startsWith('```')) {
+      cleanContent = cleanContent.replace(/^```json\n/, '').replace(/^```\n/, '').replace(/\n```$/, '');
+    }
+
     // Parse the JSON response from the AI
-    const analysisResult = JSON.parse(content);
+    const analysisResult = JSON.parse(cleanContent);
 
     return new Response(
       JSON.stringify(analysisResult),

@@ -13,6 +13,7 @@ import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { z } from 'zod';
+import { supabase } from '@/integrations/supabase/client';
 
 export const SymptomTracker = () => {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
@@ -20,6 +21,7 @@ export const SymptomTracker = () => {
   const [customSymptom, setCustomSymptom] = useState('');
   const [notes, setNotes] = useState('');
   const [flowIntensity, setFlowIntensity] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
   const { toast } = useToast();
 
   const symptomCategories = {
@@ -128,7 +130,7 @@ export const SymptomTracker = () => {
     setCustomSymptom('');
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     // Validate notes
     try {
       notesSchema.parse(notes);
@@ -143,16 +145,68 @@ export const SymptomTracker = () => {
       }
     }
 
-    // In a real app, this would save to a database
-    toast({
-      title: "Symptoms logged successfully!",
-      description: `Logged ${selectedSymptoms.length} symptoms for ${selectedDate ? format(selectedDate, 'PPP') : 'today'}`,
-    });
-    
-    // Reset form
-    setSelectedSymptoms([]);
-    setNotes('');
-    setFlowIntensity('');
+    if (!selectedDate) {
+      toast({
+        title: 'Date Required',
+        description: 'Please select a date for your symptoms',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setIsSaving(true);
+
+    try {
+      // Get current user
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      
+      if (userError || !user) {
+        toast({
+          title: 'Authentication Error',
+          description: 'You must be logged in to save symptoms',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      // Save to database
+      const { error } = await supabase.from('symptom_logs').insert({
+        user_id: user.id,
+        log_date: format(selectedDate, 'yyyy-MM-dd'),
+        symptoms: selectedSymptoms.length > 0 ? selectedSymptoms : null,
+        flow_intensity: flowIntensity || null,
+        notes: notes || null,
+      });
+
+      if (error) {
+        console.error('Database error:', error);
+        toast({
+          title: 'Save Failed',
+          description: 'Failed to save symptoms. Please try again.',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      toast({
+        title: "Symptoms logged successfully!",
+        description: `Logged ${selectedSymptoms.length} symptoms for ${format(selectedDate, 'PPP')}`,
+      });
+      
+      // Reset form
+      setSelectedSymptoms([]);
+      setNotes('');
+      setFlowIntensity('');
+    } catch (error) {
+      console.error('Error saving symptoms:', error);
+      toast({
+        title: 'Error',
+        description: 'An unexpected error occurred',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -301,9 +355,13 @@ export const SymptomTracker = () => {
               </div>
             )}
 
-            <Button onClick={handleSave} className="w-full bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600">
+            <Button 
+              onClick={handleSave} 
+              disabled={isSaving}
+              className="w-full bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600"
+            >
               <Save className="w-4 h-4 mr-2" />
-              Save Symptoms
+              {isSaving ? 'Saving...' : 'Save Symptoms'}
             </Button>
           </CardContent>
         </Card>
