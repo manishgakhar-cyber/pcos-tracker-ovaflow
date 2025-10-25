@@ -3,21 +3,85 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Calendar, TrendingUp, AlertTriangle, Heart } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { useEffect, useState } from 'react';
+import { differenceInDays, addDays } from 'date-fns';
 
 export const Dashboard = () => {
-  // Mock data - in a real app, this would come from user's logged data
-  const mockData = {
-    cycleDay: 14,
-    cycleLength: 28,
-    nextPeriod: '7 days',
-    riskScore: 35,
-    recentSymptoms: ['Mood swings', 'Irregular periods', 'Acne'],
-    insights: [
-      'Your cycle has been irregular for the past 3 months',
-      'Consider tracking weight and mood more consistently',
-      'Based on your symptoms, consider consulting a healthcare provider'
-    ]
-  };
+  const [loading, setLoading] = useState(true);
+  const [cycleData, setCycleData] = useState<any>(null);
+  const [riskData, setRiskData] = useState<any>(null);
+  const [recentSymptoms, setRecentSymptoms] = useState<string[]>([]);
+
+  useEffect(() => {
+    const fetchUserData = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      // Fetch most recent cycle data
+      const { data: cycles } = await supabase
+        .from('cycle_data')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('period_start_date', { ascending: false })
+        .limit(1);
+
+      // Fetch PCOS assessment
+      const { data: assessment } = await supabase
+        .from('pcos_assessments')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(1);
+
+      // Fetch recent symptoms (last 7 days)
+      const sevenDaysAgo = new Date();
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+      const { data: symptoms } = await supabase
+        .from('symptom_logs')
+        .select('*')
+        .eq('user_id', user.id)
+        .gte('log_date', sevenDaysAgo.toISOString().split('T')[0])
+        .order('log_date', { ascending: false });
+
+      setCycleData(cycles?.[0] || null);
+      setRiskData(assessment?.[0] || null);
+      
+      // Extract unique symptoms from recent logs
+      const uniqueSymptoms = new Set<string>();
+      symptoms?.forEach(log => {
+        log.symptoms?.forEach((s: string) => uniqueSymptoms.add(s));
+      });
+      setRecentSymptoms(Array.from(uniqueSymptoms));
+      
+      setLoading(false);
+    };
+
+    fetchUserData();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center space-y-3">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-500 mx-auto"></div>
+          <p className="text-gray-600">Loading your health data...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Calculate cycle metrics
+  const cycleDay = cycleData 
+    ? differenceInDays(new Date(), new Date(cycleData.period_start_date)) + 1 
+    : null;
+  const cycleLength = cycleData?.cycle_length || null;
+  const nextPeriodDate = cycleData && cycleLength
+    ? addDays(new Date(cycleData.period_start_date), cycleLength)
+    : null;
+  const nextPeriod = nextPeriodDate
+    ? `${differenceInDays(nextPeriodDate, new Date())} days`
+    : null;
 
   const getRiskLevel = (score: number) => {
     if (score < 30) return { level: 'Low', color: 'bg-green-500' };
@@ -25,14 +89,19 @@ export const Dashboard = () => {
     return { level: 'High', color: 'bg-red-500' };
   };
 
-  const riskLevel = getRiskLevel(mockData.riskScore);
+  const riskScore = riskData?.risk_score || null;
+  const riskLevel = riskScore ? getRiskLevel(riskScore) : null;
+
+  const hasAnyData = cycleData || riskData || recentSymptoms.length > 0;
 
   return (
     <div className="space-y-6">
       {/* Welcome Section */}
       <div className="text-center space-y-2">
         <h2 className="text-3xl font-bold text-gray-900">Welcome back!</h2>
-        <p className="text-gray-600">Here's your health overview</p>
+        <p className="text-gray-600">
+          {hasAnyData ? "Here's your health overview" : "Start tracking to see your health insights"}
+        </p>
       </div>
 
       {/* Key Metrics */}
@@ -45,10 +114,16 @@ export const Dashboard = () => {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-pink-900">
-              Day {mockData.cycleDay}
-            </div>
-            <p className="text-sm text-pink-600">of {mockData.cycleLength}-day cycle</p>
+            {cycleDay && cycleLength ? (
+              <>
+                <div className="text-2xl font-bold text-pink-900">
+                  Day {cycleDay}
+                </div>
+                <p className="text-sm text-pink-600">of {cycleLength}-day cycle</p>
+              </>
+            ) : (
+              <div className="text-sm text-pink-600">No cycle data yet</div>
+            )}
           </CardContent>
         </Card>
 
@@ -60,10 +135,16 @@ export const Dashboard = () => {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-purple-900">
-              {mockData.nextPeriod}
-            </div>
-            <p className="text-sm text-purple-600">Expected date</p>
+            {nextPeriod ? (
+              <>
+                <div className="text-2xl font-bold text-purple-900">
+                  {nextPeriod}
+                </div>
+                <p className="text-sm text-purple-600">Expected date</p>
+              </>
+            ) : (
+              <div className="text-sm text-purple-600">No cycle data yet</div>
+            )}
           </CardContent>
         </Card>
 
@@ -75,15 +156,21 @@ export const Dashboard = () => {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="flex items-center space-x-2">
-              <div className="text-2xl font-bold text-blue-900">
-                {mockData.riskScore}%
-              </div>
-              <Badge variant="secondary" className={`${riskLevel.color} text-white`}>
-                {riskLevel.level}
-              </Badge>
-            </div>
-            <Progress value={mockData.riskScore} className="mt-2" />
+            {riskScore && riskLevel ? (
+              <>
+                <div className="flex items-center space-x-2">
+                  <div className="text-2xl font-bold text-blue-900">
+                    {riskScore}%
+                  </div>
+                  <Badge variant="secondary" className={`${riskLevel.color} text-white`}>
+                    {riskLevel.level}
+                  </Badge>
+                </div>
+                <Progress value={riskScore} className="mt-2" />
+              </>
+            ) : (
+              <div className="text-sm text-blue-600">Assessment completed</div>
+            )}
           </CardContent>
         </Card>
 
@@ -96,7 +183,7 @@ export const Dashboard = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-orange-900">
-              {mockData.recentSymptoms.length}
+              {recentSymptoms.length}
             </div>
             <p className="text-sm text-orange-600">This week</p>
           </CardContent>
@@ -112,35 +199,47 @@ export const Dashboard = () => {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="flex flex-wrap gap-2">
-            {mockData.recentSymptoms.map((symptom, index) => (
-              <Badge key={index} variant="outline" className="bg-pink-50 text-pink-700 border-pink-200">
-                {symptom}
-              </Badge>
-            ))}
-          </div>
+          {recentSymptoms.length > 0 ? (
+            <div className="flex flex-wrap gap-2">
+              {recentSymptoms.map((symptom, index) => (
+                <Badge key={index} variant="outline" className="bg-pink-50 text-pink-700 border-pink-200">
+                  {symptom}
+                </Badge>
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-gray-500">No symptoms logged this week</p>
+          )}
         </CardContent>
       </Card>
 
       {/* Insights */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center text-gray-900">
-            <TrendingUp className="w-5 h-5 mr-2 text-blue-500" />
-            Health Insights
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-3">
-            {mockData.insights.map((insight, index) => (
-              <div key={index} className="flex items-start space-x-3 p-3 bg-blue-50 rounded-lg border border-blue-100">
+      {!hasAnyData && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center text-gray-900">
+              <TrendingUp className="w-5 h-5 mr-2 text-blue-500" />
+              Getting Started
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              <div className="flex items-start space-x-3 p-3 bg-blue-50 rounded-lg border border-blue-100">
                 <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 flex-shrink-0"></div>
-                <p className="text-sm text-blue-800">{insight}</p>
+                <p className="text-sm text-blue-800">Track your symptoms daily to identify patterns</p>
               </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+              <div className="flex items-start space-x-3 p-3 bg-blue-50 rounded-lg border border-blue-100">
+                <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 flex-shrink-0"></div>
+                <p className="text-sm text-blue-800">Log your cycle information in the Calendar tab</p>
+              </div>
+              <div className="flex items-start space-x-3 p-3 bg-blue-50 rounded-lg border border-blue-100">
+                <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 flex-shrink-0"></div>
+                <p className="text-sm text-blue-800">Check back regularly to see personalized health insights</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 };

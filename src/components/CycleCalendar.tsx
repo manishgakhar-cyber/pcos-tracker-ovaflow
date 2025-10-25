@@ -1,65 +1,74 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Calendar, ChevronLeft, ChevronRight } from 'lucide-react';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths } from 'date-fns';
+import { supabase } from '@/integrations/supabase/client';
 
 export const CycleCalendar = () => {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [symptomLogs, setSymptomLogs] = useState<any[]>([]);
+  const [cycleData, setCycleData] = useState<any[]>([]);
 
-  // Mock data - in a real app, this would come from user's logged data
-  const mockCycleData = {
-    periodDays: [
-      new Date(2024, 11, 1),
-      new Date(2024, 11, 2),
-      new Date(2024, 11, 3),
-      new Date(2024, 11, 4),
-      new Date(2024, 11, 5),
-    ],
-    ovulationDays: [
-      new Date(2024, 11, 14),
-      new Date(2024, 11, 15),
-    ],
-    symptomDays: [
-      { date: new Date(2024, 11, 8), symptoms: ['Mood swings', 'Bloating'] },
-      { date: new Date(2024, 11, 12), symptoms: ['Acne', 'Fatigue'] },
-      { date: new Date(2024, 11, 20), symptoms: ['Headache'] },
-    ],
-    fertileWindow: [
-      new Date(2024, 11, 12),
-      new Date(2024, 11, 13),
-      new Date(2024, 11, 14),
-      new Date(2024, 11, 15),
-      new Date(2024, 11, 16),
-    ]
-  };
+  useEffect(() => {
+    const fetchUserData = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      // Fetch symptom logs
+      const { data: symptoms } = await supabase
+        .from('symptom_logs')
+        .select('*')
+        .eq('user_id', user.id);
+
+      // Fetch cycle data
+      const { data: cycles } = await supabase
+        .from('cycle_data')
+        .select('*')
+        .eq('user_id', user.id);
+
+      setSymptomLogs(symptoms || []);
+      setCycleData(cycles || []);
+      setLoading(false);
+    };
+
+    fetchUserData();
+  }, []);
 
   const monthStart = startOfMonth(currentMonth);
   const monthEnd = endOfMonth(currentMonth);
   const days = eachDayOfInterval({ start: monthStart, end: monthEnd });
 
   const getDayType = (day: Date) => {
-    if (mockCycleData.periodDays.some(d => isSameDay(d, day))) {
-      return 'period';
-    }
-    if (mockCycleData.ovulationDays.some(d => isSameDay(d, day))) {
-      return 'ovulation';
-    }
-    if (mockCycleData.fertileWindow.some(d => isSameDay(d, day))) {
-      return 'fertile';
-    }
-    if (mockCycleData.symptomDays.some(d => isSameDay(d.date, day))) {
+    const dayStr = format(day, 'yyyy-MM-dd');
+    
+    // Check if there are symptoms logged
+    const hasSymptoms = symptomLogs.some(log => log.log_date === dayStr);
+    if (hasSymptoms) {
       return 'symptoms';
     }
+    
+    // Check if it's a period day
+    const isPeriodDay = cycleData.some(cycle => {
+      const startDate = new Date(cycle.period_start_date);
+      const endDate = cycle.period_end_date ? new Date(cycle.period_end_date) : startDate;
+      return day >= startDate && day <= endDate;
+    });
+    if (isPeriodDay) {
+      return 'period';
+    }
+    
     return 'normal';
   };
 
   const getDaySymptoms = (day: Date) => {
-    const symptomDay = mockCycleData.symptomDays.find(d => isSameDay(d.date, day));
-    return symptomDay?.symptoms || [];
+    const dayStr = format(day, 'yyyy-MM-dd');
+    const log = symptomLogs.find(log => log.log_date === dayStr);
+    return log?.symptoms || [];
   };
 
   const getDayStyles = (day: Date, type: string) => {
@@ -68,12 +77,8 @@ export const CycleCalendar = () => {
     switch (type) {
       case 'period':
         return `${baseStyles} bg-red-500 text-white hover:bg-red-600`;
-      case 'ovulation':
-        return `${baseStyles} bg-blue-500 text-white hover:bg-blue-600`;
-      case 'fertile':
-        return `${baseStyles} bg-green-100 text-green-800 hover:bg-green-200 border-2 border-green-300`;
       case 'symptoms':
-        return `${baseStyles} bg-orange-100 text-orange-800 hover:bg-orange-200 border-2 border-orange-300`;
+        return `${baseStyles} bg-purple-100 text-purple-800 hover:bg-purple-200 border-2 border-purple-300`;
       default:
         return `${baseStyles} hover:bg-gray-100 text-gray-700`;
     }
@@ -87,6 +92,32 @@ export const CycleCalendar = () => {
     
     return { dayType, symptoms };
   };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center space-y-3">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-500 mx-auto"></div>
+          <p className="text-gray-600">Loading your calendar...</p>
+        </div>
+      </div>
+    );
+  }
+
+  const hasAnyData = symptomLogs.length > 0 || cycleData.length > 0;
+  const monthSymptomCount = symptomLogs.filter(log => {
+    const logDate = new Date(log.log_date);
+    return isSameMonth(logDate, currentMonth);
+  }).length;
+  
+  const monthPeriodDays = cycleData.filter(cycle => {
+    const startDate = new Date(cycle.period_start_date);
+    return isSameMonth(startDate, currentMonth);
+  }).reduce((total, cycle) => {
+    const endDate = cycle.period_end_date ? new Date(cycle.period_end_date) : new Date(cycle.period_start_date);
+    const startDate = new Date(cycle.period_start_date);
+    return total + Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+  }, 0);
 
   return (
     <div className="max-w-6xl mx-auto space-y-6">
@@ -168,17 +199,12 @@ export const CycleCalendar = () => {
                 <span className="text-sm">Period</span>
               </div>
               <div className="flex items-center space-x-3">
-                <div className="w-4 h-4 bg-blue-500 rounded-full"></div>
-                <span className="text-sm">Ovulation</span>
-              </div>
-              <div className="flex items-center space-x-3">
-                <div className="w-4 h-4 bg-green-300 border-2 border-green-400 rounded-full"></div>
-                <span className="text-sm">Fertile Window</span>
-              </div>
-              <div className="flex items-center space-x-3">
-                <div className="w-4 h-4 bg-orange-300 border-2 border-orange-400 rounded-full"></div>
+                <div className="w-4 h-4 bg-purple-300 border-2 border-purple-400 rounded-full"></div>
                 <span className="text-sm">Symptoms Logged</span>
               </div>
+              {!hasAnyData && (
+                <p className="text-xs text-gray-500 mt-3">Start tracking to see your cycle data</p>
+              )}
             </CardContent>
           </Card>
 
@@ -201,14 +227,10 @@ export const CycleCalendar = () => {
                         <span className="text-sm font-medium">Status: </span>
                         <Badge variant="outline" className={
                           info.dayType === 'period' ? 'bg-red-100 text-red-800' :
-                          info.dayType === 'ovulation' ? 'bg-blue-100 text-blue-800' :
-                          info.dayType === 'fertile' ? 'bg-green-100 text-green-800' :
-                          info.dayType === 'symptoms' ? 'bg-orange-100 text-orange-800' :
+                          info.dayType === 'symptoms' ? 'bg-purple-100 text-purple-800' :
                           'bg-gray-100 text-gray-800'
                         }>
                           {info.dayType === 'period' ? 'Period' :
-                           info.dayType === 'ovulation' ? 'Ovulation' :
-                           info.dayType === 'fertile' ? 'Fertile Window' :
                            info.dayType === 'symptoms' ? 'Symptoms Logged' :
                            'Normal Day'}
                         </Badge>
@@ -234,25 +256,29 @@ export const CycleCalendar = () => {
           )}
 
           {/* Quick Stats */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">This Month</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              <div className="flex justify-between text-sm">
-                <span>Period Days:</span>
-                <span className="font-medium">5</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span>Symptoms Logged:</span>
-                <span className="font-medium">3 days</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span>Cycle Length:</span>
-                <span className="font-medium">28 days</span>
-              </div>
-            </CardContent>
-          </Card>
+          {hasAnyData && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">This Month</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span>Period Days:</span>
+                  <span className="font-medium">{monthPeriodDays || 0}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span>Symptoms Logged:</span>
+                  <span className="font-medium">{monthSymptomCount} days</span>
+                </div>
+                {cycleData.length > 0 && cycleData[0].cycle_length && (
+                  <div className="flex justify-between text-sm">
+                    <span>Cycle Length:</span>
+                    <span className="font-medium">{cycleData[0].cycle_length} days</span>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
         </div>
       </div>
     </div>
