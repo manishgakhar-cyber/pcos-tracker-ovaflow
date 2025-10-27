@@ -130,7 +130,110 @@ export const SymptomTracker = () => {
     setCustomSymptom('');
   };
 
-  const handleSave = async () => {
+  const handleSavePeriod = async () => {
+    if (!selectedDate) {
+      toast({
+        title: 'Date Required',
+        description: 'Please select a date for your period',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (!flowIntensity || flowIntensity === 'none') {
+      toast({
+        title: 'Flow Required',
+        description: 'Please select a flow intensity',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setIsSaving(true);
+
+    try {
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      
+      if (userError || !user) {
+        toast({
+          title: 'Authentication Error',
+          description: 'You must be logged in to log your period',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      const formattedDate = format(selectedDate, 'yyyy-MM-dd');
+
+      // Save to symptom_logs with flow
+      await supabase.from('symptom_logs').insert({
+        user_id: user.id,
+        log_date: formattedDate,
+        flow_intensity: flowIntensity,
+        symptoms: null,
+        notes: null,
+      });
+
+      // Save to cycle_data
+      const { data: recentCycle } = await supabase
+        .from('cycle_data')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('period_start_date', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      const logDate = new Date(formattedDate);
+      
+      if (recentCycle) {
+        const endDate = recentCycle.period_end_date 
+          ? new Date(recentCycle.period_end_date)
+          : new Date(recentCycle.period_start_date);
+        
+        const daysDiff = Math.floor((logDate.getTime() - endDate.getTime()) / (1000 * 60 * 60 * 24));
+        
+        // If within 1 day of last period, extend it
+        if (daysDiff <= 1 && daysDiff >= 0) {
+          await supabase
+            .from('cycle_data')
+            .update({ period_end_date: formattedDate })
+            .eq('id', recentCycle.id);
+        } else {
+          // Create new period entry
+          await supabase.from('cycle_data').insert({
+            user_id: user.id,
+            period_start_date: formattedDate,
+            period_end_date: formattedDate,
+          });
+        }
+      } else {
+        // First period entry
+        await supabase.from('cycle_data').insert({
+          user_id: user.id,
+          period_start_date: formattedDate,
+          period_end_date: formattedDate,
+        });
+      }
+
+      toast({
+        title: "Period logged!",
+        description: `Logged ${flowIntensity} flow for ${format(selectedDate, 'PPP')}`,
+      });
+      
+      setFlowIntensity('');
+    } catch (error) {
+      console.error('Error saving period:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to log period. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleSaveSymptoms = async () => {
     // Validate notes
     try {
       notesSchema.parse(notes);
@@ -154,10 +257,18 @@ export const SymptomTracker = () => {
       return;
     }
 
+    if (selectedSymptoms.length === 0 && !notes) {
+      toast({
+        title: 'No Symptoms',
+        description: 'Please select at least one symptom or add notes',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     setIsSaving(true);
 
     try {
-      // Get current user
       const { data: { user }, error: userError } = await supabase.auth.getUser();
       
       if (userError || !user) {
@@ -176,7 +287,7 @@ export const SymptomTracker = () => {
         user_id: user.id,
         log_date: formattedDate,
         symptoms: selectedSymptoms.length > 0 ? selectedSymptoms : null,
-        flow_intensity: flowIntensity || null,
+        flow_intensity: null,
         notes: notes || null,
       });
 
@@ -190,74 +301,14 @@ export const SymptomTracker = () => {
         return;
       }
 
-      // If flow is logged (and not "none"), also save to cycle_data as a period day
-      if (flowIntensity && flowIntensity !== 'none') {
-        // Check if there's already a cycle entry for this date
-        const { data: existingCycle } = await supabase
-          .from('cycle_data')
-          .select('*')
-          .eq('user_id', user.id)
-          .lte('period_start_date', formattedDate)
-          .gte('period_end_date', formattedDate)
-          .maybeSingle();
-
-        if (!existingCycle) {
-          // Check if this is a continuation of an existing period
-          const { data: recentCycle } = await supabase
-            .from('cycle_data')
-            .select('*')
-            .eq('user_id', user.id)
-            .order('period_start_date', { ascending: false })
-            .limit(1)
-            .maybeSingle();
-
-          const logDate = new Date(formattedDate);
-          
-          if (recentCycle) {
-            const endDate = recentCycle.period_end_date 
-              ? new Date(recentCycle.period_end_date)
-              : new Date(recentCycle.period_start_date);
-            
-            const daysDiff = Math.floor((logDate.getTime() - endDate.getTime()) / (1000 * 60 * 60 * 24));
-            
-            // If within 1 day of last period, extend it
-            if (daysDiff <= 1 && daysDiff >= 0) {
-              await supabase
-                .from('cycle_data')
-                .update({ period_end_date: formattedDate })
-                .eq('id', recentCycle.id);
-            } else {
-              // Create new period entry
-              await supabase.from('cycle_data').insert({
-                user_id: user.id,
-                period_start_date: formattedDate,
-                period_end_date: formattedDate,
-              });
-            }
-          } else {
-            // First period entry
-            await supabase.from('cycle_data').insert({
-              user_id: user.id,
-              period_start_date: formattedDate,
-              period_end_date: formattedDate,
-            });
-          }
-        }
-      }
-
-      const logMessage = flowIntensity && flowIntensity !== 'none' 
-        ? `Period logged for ${format(selectedDate, 'PPP')}`
-        : `Logged ${selectedSymptoms.length} symptoms for ${format(selectedDate, 'PPP')}`;
-
       toast({
-        title: "Successfully saved!",
-        description: logMessage,
+        title: "Symptoms logged!",
+        description: `Logged ${selectedSymptoms.length} symptoms for ${format(selectedDate, 'PPP')}`,
       });
       
       // Reset form
       setSelectedSymptoms([]);
       setNotes('');
-      setFlowIntensity('');
     } catch (error) {
       console.error('Error saving symptoms:', error);
       toast({
@@ -273,53 +324,60 @@ export const SymptomTracker = () => {
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       <div className="text-center space-y-2">
-        <h2 className="text-3xl font-bold text-gray-900">Log Your Symptoms</h2>
-        <p className="text-gray-600">Track your daily symptoms to identify patterns</p>
+        <h2 className="text-3xl font-bold text-gray-900">Track Your Health</h2>
+        <p className="text-gray-600">Log your period and symptoms separately</p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Date Selection */}
-        <Card className="lg:col-span-1">
-          <CardHeader>
-            <CardTitle className="text-lg">Select Date</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  className={cn(
-                    "w-full justify-start text-left font-normal",
-                    !selectedDate && "text-muted-foreground"
-                  )}
-                >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {selectedDate ? format(selectedDate, "PPP") : "Pick a date"}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                <Calendar
-                  mode="single"
-                  selected={selectedDate}
-                  onSelect={setSelectedDate}
-                  initialFocus
-                  className="pointer-events-auto"
-                />
-              </PopoverContent>
-            </Popover>
+      {/* Date Selection */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">Select Date</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                className={cn(
+                  "w-full justify-start text-left font-normal",
+                  !selectedDate && "text-muted-foreground"
+                )}
+              >
+                <CalendarIcon className="mr-2 h-4 w-4" />
+                {selectedDate ? format(selectedDate, "PPP") : "Pick a date"}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <Calendar
+                mode="single"
+                selected={selectedDate}
+                onSelect={setSelectedDate}
+                initialFocus
+                className="pointer-events-auto"
+              />
+            </PopoverContent>
+          </Popover>
+        </CardContent>
+      </Card>
 
-            {/* Flow Intensity */}
-            <div className="mt-6">
-              <Label className="text-sm font-medium">Menstrual Flow</Label>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Period Logging */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Log Period</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div>
+              <Label className="text-sm font-medium">Menstrual Flow Intensity</Label>
               <div className="grid grid-cols-1 gap-2 mt-2">
-                {flowOptions.map((option) => (
+                {flowOptions.filter(opt => opt.value !== 'none').map((option) => (
                   <Button
                     key={option.value}
                     variant={flowIntensity === option.value ? "default" : "outline"}
                     onClick={() => setFlowIntensity(option.value)}
                     className={cn(
                       "justify-start h-auto py-2",
-                      flowIntensity === option.value && "ring-2 ring-pink-500"
+                      flowIntensity === option.value && "ring-2 ring-red-500"
                     )}
                   >
                     <div className={`w-4 h-4 rounded-full mr-2 ${option.color}`}></div>
@@ -328,19 +386,28 @@ export const SymptomTracker = () => {
                 ))}
               </div>
             </div>
+
+            <Button 
+              onClick={handleSavePeriod} 
+              disabled={isSaving}
+              className="w-full bg-gradient-to-r from-red-500 to-pink-500 hover:from-red-600 hover:to-pink-600"
+            >
+              <Save className="w-4 h-4 mr-2" />
+              {isSaving ? 'Saving...' : 'Save Period'}
+            </Button>
           </CardContent>
         </Card>
 
-        {/* Symptoms */}
-        <Card className="lg:col-span-2">
+        {/* Symptoms Logging */}
+        <Card>
           <CardHeader>
-            <CardTitle className="text-lg">Symptoms</CardTitle>
+            <CardTitle className="text-lg">Log Symptoms</CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
             {Object.entries(symptomCategories).map(([category, symptoms]) => (
               <div key={category}>
                 <h3 className="font-medium text-gray-900 mb-3">{category}</h3>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                <div className="grid grid-cols-2 gap-3">
                   {symptoms.map((symptom) => (
                     <div key={symptom} className="flex items-center space-x-2">
                       <Checkbox
@@ -407,7 +474,7 @@ export const SymptomTracker = () => {
                   {selectedSymptoms.map((symptom) => (
                     <span
                       key={symptom}
-                      className="px-2 py-1 bg-pink-100 text-pink-800 rounded-full text-xs border border-pink-200"
+                      className="px-2 py-1 bg-purple-100 text-purple-800 rounded-full text-xs border border-purple-200"
                     >
                       {symptom}
                     </span>
@@ -417,9 +484,9 @@ export const SymptomTracker = () => {
             )}
 
             <Button 
-              onClick={handleSave} 
+              onClick={handleSaveSymptoms} 
               disabled={isSaving}
-              className="w-full bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600"
+              className="w-full bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600"
             >
               <Save className="w-4 h-4 mr-2" />
               {isSaving ? 'Saving...' : 'Save Symptoms'}
