@@ -169,17 +169,19 @@ export const SymptomTracker = () => {
         return;
       }
 
-      // Save to database
-      const { error } = await supabase.from('symptom_logs').insert({
+      const formattedDate = format(selectedDate, 'yyyy-MM-dd');
+
+      // Save symptom log
+      const { error: symptomError } = await supabase.from('symptom_logs').insert({
         user_id: user.id,
-        log_date: format(selectedDate, 'yyyy-MM-dd'),
+        log_date: formattedDate,
         symptoms: selectedSymptoms.length > 0 ? selectedSymptoms : null,
         flow_intensity: flowIntensity || null,
         notes: notes || null,
       });
 
-      if (error) {
-        console.error('Database error:', error);
+      if (symptomError) {
+        console.error('Database error:', symptomError);
         toast({
           title: 'Save Failed',
           description: 'Failed to save symptoms. Please try again.',
@@ -188,9 +190,68 @@ export const SymptomTracker = () => {
         return;
       }
 
+      // If flow is logged (and not "none"), also save to cycle_data as a period day
+      if (flowIntensity && flowIntensity !== 'none') {
+        // Check if there's already a cycle entry for this date
+        const { data: existingCycle } = await supabase
+          .from('cycle_data')
+          .select('*')
+          .eq('user_id', user.id)
+          .lte('period_start_date', formattedDate)
+          .gte('period_end_date', formattedDate)
+          .maybeSingle();
+
+        if (!existingCycle) {
+          // Check if this is a continuation of an existing period
+          const { data: recentCycle } = await supabase
+            .from('cycle_data')
+            .select('*')
+            .eq('user_id', user.id)
+            .order('period_start_date', { ascending: false })
+            .limit(1)
+            .maybeSingle();
+
+          const logDate = new Date(formattedDate);
+          
+          if (recentCycle) {
+            const endDate = recentCycle.period_end_date 
+              ? new Date(recentCycle.period_end_date)
+              : new Date(recentCycle.period_start_date);
+            
+            const daysDiff = Math.floor((logDate.getTime() - endDate.getTime()) / (1000 * 60 * 60 * 24));
+            
+            // If within 1 day of last period, extend it
+            if (daysDiff <= 1 && daysDiff >= 0) {
+              await supabase
+                .from('cycle_data')
+                .update({ period_end_date: formattedDate })
+                .eq('id', recentCycle.id);
+            } else {
+              // Create new period entry
+              await supabase.from('cycle_data').insert({
+                user_id: user.id,
+                period_start_date: formattedDate,
+                period_end_date: formattedDate,
+              });
+            }
+          } else {
+            // First period entry
+            await supabase.from('cycle_data').insert({
+              user_id: user.id,
+              period_start_date: formattedDate,
+              period_end_date: formattedDate,
+            });
+          }
+        }
+      }
+
+      const logMessage = flowIntensity && flowIntensity !== 'none' 
+        ? `Period logged for ${format(selectedDate, 'PPP')}`
+        : `Logged ${selectedSymptoms.length} symptoms for ${format(selectedDate, 'PPP')}`;
+
       toast({
-        title: "Symptoms logged successfully!",
-        description: `Logged ${selectedSymptoms.length} symptoms for ${format(selectedDate, 'PPP')}`,
+        title: "Successfully saved!",
+        description: logMessage,
       });
       
       // Reset form
