@@ -199,6 +199,17 @@ export const SymptomTracker = () => {
             .update({ period_end_date: formattedDate })
             .eq('id', recentCycle.id);
         } else {
+          // New period - calculate cycle length from previous period
+          const cycleLength = Math.floor(
+            (logDate.getTime() - new Date(recentCycle.period_start_date).getTime()) / (1000 * 60 * 60 * 24)
+          );
+          
+          // Update previous cycle with calculated length
+          await supabase
+            .from('cycle_data')
+            .update({ cycle_length: cycleLength })
+            .eq('id', recentCycle.id);
+          
           // Create new period entry
           await supabase.from('cycle_data').insert({
             user_id: user.id,
