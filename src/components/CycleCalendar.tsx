@@ -46,13 +46,7 @@ export const CycleCalendar = () => {
   const getDayType = (day: Date) => {
     const dayStr = format(day, 'yyyy-MM-dd');
     
-    // Check if there are symptoms logged
-    const hasSymptoms = symptomLogs.some(log => log.log_date === dayStr);
-    if (hasSymptoms) {
-      return 'symptoms';
-    }
-    
-    // Check if it's a period day
+    // Check if it's a period day first (takes priority)
     const isPeriodDay = cycleData.some(cycle => {
       const startDate = new Date(cycle.period_start_date);
       const endDate = cycle.period_end_date ? new Date(cycle.period_end_date) : startDate;
@@ -60,6 +54,12 @@ export const CycleCalendar = () => {
     });
     if (isPeriodDay) {
       return 'period';
+    }
+    
+    // Then check if there are symptoms logged
+    const hasSymptoms = symptomLogs.some(log => log.log_date === dayStr);
+    if (hasSymptoms) {
+      return 'symptoms';
     }
     
     return 'normal';
