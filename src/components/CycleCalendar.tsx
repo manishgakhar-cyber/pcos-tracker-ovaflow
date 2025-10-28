@@ -3,9 +3,36 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Calendar, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Calendar, ChevronLeft, ChevronRight, Trash2, Edit } from 'lucide-react';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { toast } from "sonner";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+
+const SYMPTOM_OPTIONS = [
+  'Cramps', 'Bloating', 'Mood Swings', 'Headache', 'Fatigue',
+  'Breast Tenderness', 'Acne', 'Back Pain', 'Nausea', 'Spotting'
+];
 
 export const CycleCalendar = () => {
   const [currentMonth, setCurrentMonth] = useState(new Date());
@@ -13,6 +40,12 @@ export const CycleCalendar = () => {
   const [loading, setLoading] = useState(true);
   const [symptomLogs, setSymptomLogs] = useState<any[]>([]);
   const [cycleData, setCycleData] = useState<any[]>([]);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [editingLog, setEditingLog] = useState<any>(null);
+  const [deletingItem, setDeletingItem] = useState<{ type: 'symptom' | 'period', id: string } | null>(null);
+  const [editSymptoms, setEditSymptoms] = useState<string[]>([]);
+  const [editNotes, setEditNotes] = useState('');
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -89,8 +122,91 @@ export const CycleCalendar = () => {
     
     const dayType = getDayType(selectedDate);
     const symptoms = getDaySymptoms(selectedDate);
+    const dayStr = format(selectedDate, 'yyyy-MM-dd');
+    const symptomLog = symptomLogs.find(log => log.log_date === dayStr);
+    const periodCycle = cycleData.find(cycle => {
+      const startDate = new Date(cycle.period_start_date);
+      const endDate = cycle.period_end_date ? new Date(cycle.period_end_date) : startDate;
+      return selectedDate >= startDate && selectedDate <= endDate;
+    });
     
-    return { dayType, symptoms };
+    return { dayType, symptoms, symptomLog, periodCycle };
+  };
+
+  const handleEditSymptomLog = (log: any) => {
+    setEditingLog(log);
+    setEditSymptoms(log.symptoms || []);
+    setEditNotes(log.notes || '');
+    setEditDialogOpen(true);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingLog) return;
+
+    const { error } = await supabase
+      .from('symptom_logs')
+      .update({
+        symptoms: editSymptoms,
+        notes: editNotes
+      })
+      .eq('id', editingLog.id);
+
+    if (error) {
+      toast.error('Failed to update log');
+      return;
+    }
+
+    toast.success('Log updated successfully');
+    setEditDialogOpen(false);
+    
+    // Refresh data
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      const { data: symptoms } = await supabase
+        .from('symptom_logs')
+        .select('*')
+        .eq('user_id', user.id);
+      setSymptomLogs(symptoms || []);
+    }
+  };
+
+  const handleDeleteClick = (type: 'symptom' | 'period', id: string) => {
+    setDeletingItem({ type, id });
+    setDeleteDialogOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deletingItem) return;
+
+    const table = deletingItem.type === 'symptom' ? 'symptom_logs' : 'cycle_data';
+    const { error } = await supabase
+      .from(table)
+      .delete()
+      .eq('id', deletingItem.id);
+
+    if (error) {
+      toast.error('Failed to delete');
+      return;
+    }
+
+    toast.success('Deleted successfully');
+    setDeleteDialogOpen(false);
+    setDeletingItem(null);
+    
+    // Refresh data
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      const { data: symptoms } = await supabase
+        .from('symptom_logs')
+        .select('*')
+        .eq('user_id', user.id);
+      const { data: cycles } = await supabase
+        .from('cycle_data')
+        .select('*')
+        .eq('user_id', user.id);
+      setSymptomLogs(symptoms || []);
+      setCycleData(cycles || []);
+    }
   };
 
   if (loading) {
@@ -248,6 +364,43 @@ export const CycleCalendar = () => {
                           </div>
                         </div>
                       )}
+
+                      {/* Action buttons */}
+                      <div className="flex gap-2 mt-4">
+                        {info.symptomLog && (
+                          <>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleEditSymptomLog(info.symptomLog)}
+                              className="flex-1"
+                            >
+                              <Edit className="w-4 h-4 mr-1" />
+                              Edit
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleDeleteClick('symptom', info.symptomLog.id)}
+                              className="flex-1"
+                            >
+                              <Trash2 className="w-4 h-4 mr-1" />
+                              Delete
+                            </Button>
+                          </>
+                        )}
+                        {info.periodCycle && !info.symptomLog && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleDeleteClick('period', info.periodCycle.id)}
+                            className="w-full"
+                          >
+                            <Trash2 className="w-4 h-4 mr-1" />
+                            Delete Period
+                          </Button>
+                        )}
+                      </div>
                     </div>
                   );
                 })()}
@@ -281,6 +434,86 @@ export const CycleCalendar = () => {
           )}
         </div>
       </div>
+
+      {/* Edit Dialog */}
+      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Symptom Log</DialogTitle>
+            <DialogDescription>
+              Update your symptoms and notes for {editingLog && format(new Date(editingLog.log_date), 'MMMM d, yyyy')}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <div>
+              <Label className="mb-2">Symptoms</Label>
+              <div className="grid grid-cols-2 gap-2">
+                {SYMPTOM_OPTIONS.map((symptom) => (
+                  <div key={symptom} className="flex items-center space-x-2">
+                    <Checkbox
+                      id={`edit-${symptom}`}
+                      checked={editSymptoms.includes(symptom)}
+                      onCheckedChange={(checked) => {
+                        if (checked) {
+                          setEditSymptoms([...editSymptoms, symptom]);
+                        } else {
+                          setEditSymptoms(editSymptoms.filter(s => s !== symptom));
+                        }
+                      }}
+                    />
+                    <label
+                      htmlFor={`edit-${symptom}`}
+                      className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                    >
+                      {symptom}
+                    </label>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <Label htmlFor="edit-notes">Notes</Label>
+              <Textarea
+                id="edit-notes"
+                value={editNotes}
+                onChange={(e) => setEditNotes(e.target.value)}
+                placeholder="Add any additional notes..."
+                rows={3}
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleSaveEdit}>
+              Save Changes
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete this {deletingItem?.type === 'symptom' ? 'symptom log' : 'period entry'}. 
+              This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmDelete} className="bg-red-600 hover:bg-red-700">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
