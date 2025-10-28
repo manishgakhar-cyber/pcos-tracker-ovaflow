@@ -8,7 +8,10 @@ import { Dashboard } from '@/components/Dashboard';
 import { SymptomTracker } from '@/components/SymptomTracker';
 import { CycleCalendar } from '@/components/CycleCalendar';
 import { Education } from '@/components/Education';
+import { Tutorial } from '@/components/Tutorial';
 import type { User } from '@supabase/supabase-js';
+
+const TUTORIAL_KEY = 'cyclewise_tutorial_completed';
 
 const Index = () => {
   const navigate = useNavigate();
@@ -16,6 +19,7 @@ const Index = () => {
   const [hasCompletedAssessment, setHasCompletedAssessment] = useState<boolean | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [showAssessmentForm, setShowAssessmentForm] = useState(false);
+  const [showTutorial, setShowTutorial] = useState(false);
 
   useEffect(() => {
     const initializeAuth = async () => {
@@ -24,6 +28,12 @@ const Index = () => {
       
       if (session?.user) {
         await checkAssessmentStatus(session.user.id);
+        
+        // Check if user has seen tutorial
+        const tutorialCompleted = localStorage.getItem(TUTORIAL_KEY);
+        if (!tutorialCompleted) {
+          setShowTutorial(true);
+        }
       } else {
         setIsLoading(false);
       }
@@ -36,6 +46,12 @@ const Index = () => {
       
       if (session?.user) {
         await checkAssessmentStatus(session.user.id);
+        
+        // Check if user has seen tutorial
+        const tutorialCompleted = localStorage.getItem(TUTORIAL_KEY);
+        if (!tutorialCompleted) {
+          setShowTutorial(true);
+        }
       } else {
         setHasCompletedAssessment(null);
         setIsLoading(false);
@@ -78,6 +94,11 @@ const Index = () => {
   const handleLogout = async () => {
     await supabase.auth.signOut();
     navigate('/auth');
+  };
+
+  const handleCloseTutorial = () => {
+    localStorage.setItem(TUTORIAL_KEY, 'true');
+    setShowTutorial(false);
   };
 
   if (isLoading) {
@@ -134,6 +155,8 @@ const Index = () => {
   // Show main app with tabs (without assessment tab)
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-50 to-purple-50">
+      <Tutorial open={showTutorial} onClose={handleCloseTutorial} />
+      
       <div className="container mx-auto px-4 py-6">
         <div className="text-center mb-8">
           <div className="flex justify-between items-center mb-2">

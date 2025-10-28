@@ -17,6 +17,8 @@ import { supabase } from '@/integrations/supabase/client';
 
 export const SymptomTracker = () => {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
+  const [periodStartDate, setPeriodStartDate] = useState<Date | undefined>(undefined);
+  const [periodEndDate, setPeriodEndDate] = useState<Date | undefined>(undefined);
   const [selectedSymptoms, setSelectedSymptoms] = useState<string[]>([]);
   const [customSymptom, setCustomSymptom] = useState('');
   const [notes, setNotes] = useState('');
@@ -131,10 +133,10 @@ export const SymptomTracker = () => {
   };
 
   const handleSavePeriod = async () => {
-    if (!selectedDate) {
+    if (!periodStartDate) {
       toast({
-        title: 'Date Required',
-        description: 'Please select a date for your period',
+        title: 'Start Date Required',
+        description: 'Please select a start date for your period',
         variant: 'destructive',
       });
       return;
@@ -144,6 +146,15 @@ export const SymptomTracker = () => {
       toast({
         title: 'Flow Required',
         description: 'Please select a flow intensity',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (periodEndDate && periodEndDate < periodStartDate) {
+      toast({
+        title: 'Invalid Date Range',
+        description: 'End date must be after start date',
         variant: 'destructive',
       });
       return;
@@ -163,16 +174,27 @@ export const SymptomTracker = () => {
         return;
       }
 
-      const formattedDate = format(selectedDate, 'yyyy-MM-dd');
+      const formattedStartDate = format(periodStartDate, 'yyyy-MM-dd');
+      const formattedEndDate = periodEndDate ? format(periodEndDate, 'yyyy-MM-dd') : formattedStartDate;
 
-      // Save to symptom_logs with flow
-      await supabase.from('symptom_logs').insert({
-        user_id: user.id,
-        log_date: formattedDate,
-        flow_intensity: flowIntensity,
-        symptoms: null,
-        notes: null,
-      });
+      // Save to symptom_logs with flow for all days in the period range
+      const startDate = new Date(formattedStartDate);
+      const endDate = new Date(formattedEndDate);
+      const daysDiff = Math.floor((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
+      
+      for (let i = 0; i <= daysDiff; i++) {
+        const currentDate = new Date(startDate);
+        currentDate.setDate(currentDate.getDate() + i);
+        const currentFormattedDate = format(currentDate, 'yyyy-MM-dd');
+        
+        await supabase.from('symptom_logs').insert({
+          user_id: user.id,
+          log_date: currentFormattedDate,
+          flow_intensity: flowIntensity,
+          symptoms: null,
+          notes: null,
+        });
+      }
 
       // Save to cycle_data
       const { data: recentCycle } = await supabase
@@ -183,20 +205,20 @@ export const SymptomTracker = () => {
         .limit(1)
         .maybeSingle();
 
-      const logDate = new Date(formattedDate);
+      const logDate = new Date(formattedStartDate);
       
       if (recentCycle) {
-        const endDate = recentCycle.period_end_date 
+        const lastEndDate = recentCycle.period_end_date 
           ? new Date(recentCycle.period_end_date)
           : new Date(recentCycle.period_start_date);
         
-        const daysDiff = Math.floor((logDate.getTime() - endDate.getTime()) / (1000 * 60 * 60 * 24));
+        const daysSinceLast = Math.floor((logDate.getTime() - lastEndDate.getTime()) / (1000 * 60 * 60 * 24));
         
         // If within 1 day of last period, extend it
-        if (daysDiff <= 1 && daysDiff >= 0) {
+        if (daysSinceLast <= 1 && daysSinceLast >= 0) {
           await supabase
             .from('cycle_data')
-            .update({ period_end_date: formattedDate })
+            .update({ period_end_date: formattedEndDate })
             .eq('id', recentCycle.id);
         } else {
           // New period - calculate cycle length from previous period
@@ -213,24 +235,28 @@ export const SymptomTracker = () => {
           // Create new period entry
           await supabase.from('cycle_data').insert({
             user_id: user.id,
-            period_start_date: formattedDate,
-            period_end_date: formattedDate,
+            period_start_date: formattedStartDate,
+            period_end_date: formattedEndDate,
           });
         }
       } else {
         // First period entry
         await supabase.from('cycle_data').insert({
           user_id: user.id,
-          period_start_date: formattedDate,
-          period_end_date: formattedDate,
+          period_start_date: formattedStartDate,
+          period_end_date: formattedEndDate,
         });
       }
 
       toast({
         title: "Period logged!",
-        description: `Logged ${flowIntensity} flow for ${format(selectedDate, 'PPP')}`,
+        description: periodEndDate 
+          ? `Logged ${flowIntensity} flow from ${format(periodStartDate, 'PPP')} to ${format(periodEndDate, 'PPP')}`
+          : `Logged ${flowIntensity} flow for ${format(periodStartDate, 'PPP')}`,
       });
       
+      setPeriodStartDate(undefined);
+      setPeriodEndDate(undefined);
       setFlowIntensity('');
     } catch (error) {
       console.error('Error saving period:', error);
@@ -378,6 +404,65 @@ export const SymptomTracker = () => {
             <CardTitle className="text-lg">Log Period</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
+            <div>
+              <Label className="text-sm font-medium">Period Start Date</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-full justify-start text-left font-normal mt-2",
+                      !periodStartDate && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {periodStartDate ? format(periodStartDate, "PPP") : "Select start date"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={periodStartDate}
+                    onSelect={setPeriodStartDate}
+                    initialFocus
+                    className="pointer-events-auto"
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+
+            <div>
+              <Label className="text-sm font-medium">Period End Date (Optional)</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-full justify-start text-left font-normal mt-2",
+                      !periodEndDate && "text-muted-foreground"
+                    )}
+                    disabled={!periodStartDate}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {periodEndDate ? format(periodEndDate, "PPP") : "Select end date (if period has ended)"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={periodEndDate}
+                    onSelect={setPeriodEndDate}
+                    disabled={(date) => periodStartDate ? date < periodStartDate : false}
+                    initialFocus
+                    className="pointer-events-auto"
+                  />
+                </PopoverContent>
+              </Popover>
+              <p className="text-xs text-muted-foreground mt-1">
+                Leave empty if your period is ongoing
+              </p>
+            </div>
+
             <div>
               <Label className="text-sm font-medium">Menstrual Flow Intensity</Label>
               <div className="grid grid-cols-1 gap-2 mt-2">
