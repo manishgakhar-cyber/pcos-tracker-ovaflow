@@ -240,13 +240,28 @@ export const CycleCalendar = () => {
     });
   }).length;
   
-  // Calculate average cycle length from completed cycles
-  const completedCycles = cycleData.filter(cycle => cycle.cycle_length).sort((a, b) => 
+  // Calculate weighted average cycle length from completed cycles (same algorithm as Dashboard)
+  const completedCycles = cycleData.filter(cycle => cycle.cycle_length && cycle.cycle_length > 0).sort((a, b) => 
     new Date(b.period_start_date).getTime() - new Date(a.period_start_date).getTime()
   );
-  const avgCycleLength = completedCycles.length > 0 
-    ? Math.round(completedCycles.reduce((sum, cycle) => sum + cycle.cycle_length, 0) / completedCycles.length)
-    : null;
+  
+  let avgCycleLength = null;
+  if (completedCycles.length > 0) {
+    // Use weighted average: recent cycles get higher weights [0.4, 0.3, 0.2, 0.1]
+    const weights = [0.4, 0.3, 0.2, 0.1];
+    const cyclesToUse = completedCycles.slice(0, 4); // Up to 4 most recent cycles
+    
+    let weightedSum = 0;
+    let totalWeight = 0;
+    
+    cyclesToUse.forEach((cycle, index) => {
+      const weight = weights[index] || 0.1;
+      weightedSum += cycle.cycle_length * weight;
+      totalWeight += weight;
+    });
+    
+    avgCycleLength = Math.round(weightedSum / totalWeight);
+  }
 
   return (
     <div className="max-w-6xl mx-auto space-y-6">

@@ -71,35 +71,50 @@ export const Dashboard = ({ onEditAssessment }: { onEditAssessment?: () => void 
     );
   }
 
-  // Calculate cycle metrics
+  // Calculate cycle metrics using weighted average algorithm
   const today = new Date();
+  today.setHours(0, 0, 0, 0); // Normalize to start of day
   let cycleDay = null;
   let cycleLength = null;
   let nextPeriodDate = null;
   let nextPeriod = null;
 
   if (Array.isArray(cycleData) && cycleData.length > 0) {
-    // Sort cycles by start date descending
+    // Sort cycles by start date descending (most recent first)
     const sortedCycles = [...cycleData].sort((a, b) => 
       new Date(b.period_start_date).getTime() - new Date(a.period_start_date).getTime()
     );
     
     const mostRecentCycle = sortedCycles[0];
     const mostRecentStart = new Date(mostRecentCycle.period_start_date);
+    mostRecentStart.setHours(0, 0, 0, 0);
     
-    // Calculate average cycle length from completed cycles
-    const completedCycles = sortedCycles.filter(cycle => cycle.cycle_length);
-    const avgCycleLength = completedCycles.length > 0
-      ? Math.round(completedCycles.reduce((sum, cycle) => sum + cycle.cycle_length, 0) / completedCycles.length)
-      : null;
-    
-    cycleLength = avgCycleLength;
-    
-    // Calculate cycle day (days since last period started)
+    // Calculate cycle day (days since last period started, starting from day 1)
     cycleDay = differenceInDays(today, mostRecentStart) + 1;
     
-    // Predict next period based on average cycle length
-    if (avgCycleLength) {
+    // Get completed cycles (those with cycle_length calculated)
+    const completedCycles = sortedCycles.filter(cycle => cycle.cycle_length && cycle.cycle_length > 0);
+    
+    if (completedCycles.length > 0) {
+      // Use weighted average for more accurate predictions
+      // Recent cycles get higher weights: [0.4, 0.3, 0.2, 0.1] for last 4 cycles
+      const weights = [0.4, 0.3, 0.2, 0.1];
+      const cyclesToUse = completedCycles.slice(0, 4); // Use up to 4 most recent cycles
+      
+      let weightedSum = 0;
+      let totalWeight = 0;
+      
+      cyclesToUse.forEach((cycle, index) => {
+        const weight = weights[index] || 0.1; // Default weight for older cycles
+        weightedSum += cycle.cycle_length * weight;
+        totalWeight += weight;
+      });
+      
+      // Calculate weighted average and round to nearest day
+      const avgCycleLength = Math.round(weightedSum / totalWeight);
+      cycleLength = avgCycleLength;
+      
+      // Predict next period: most recent period start + weighted average cycle length
       nextPeriodDate = addDays(mostRecentStart, avgCycleLength);
       const daysUntilNextPeriod = differenceInDays(nextPeriodDate, today);
       
@@ -111,6 +126,10 @@ export const Dashboard = ({ onEditAssessment }: { onEditAssessment?: () => void 
         // Period is overdue
         nextPeriod = `${Math.abs(daysUntilNextPeriod)} days overdue`;
       }
+    } else {
+      // No completed cycles yet - need at least 2 periods to predict
+      cycleLength = null;
+      nextPeriod = null;
     }
   }
 
