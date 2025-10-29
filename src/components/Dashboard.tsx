@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Calendar, TrendingUp, AlertTriangle, Heart } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useEffect, useState } from 'react';
-import { differenceInDays, addDays } from 'date-fns';
+import { differenceInDays, addDays, isAfter, isBefore } from 'date-fns';
 
 export const Dashboard = ({ onEditAssessment }: { onEditAssessment?: () => void }) => {
   const [loading, setLoading] = useState(true);
@@ -19,13 +19,12 @@ export const Dashboard = ({ onEditAssessment }: { onEditAssessment?: () => void 
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      // Fetch most recent cycle data
+      // Fetch all cycle data to calculate properly
       const { data: cycles } = await supabase
         .from('cycle_data')
         .select('*')
         .eq('user_id', user.id)
-        .order('period_start_date', { ascending: false })
-        .limit(1);
+        .order('period_start_date', { ascending: false });
 
       // Fetch PCOS assessment
       const { data: assessment } = await supabase
@@ -45,7 +44,7 @@ export const Dashboard = ({ onEditAssessment }: { onEditAssessment?: () => void 
         .gte('log_date', sevenDaysAgo.toISOString().split('T')[0])
         .order('log_date', { ascending: false });
 
-      setCycleData(cycles?.[0] || null);
+      setCycleData(cycles || []);
       setRiskData(assessment?.[0] || null);
       
       // Extract unique symptoms from recent logs
@@ -73,16 +72,47 @@ export const Dashboard = ({ onEditAssessment }: { onEditAssessment?: () => void 
   }
 
   // Calculate cycle metrics
-  const cycleDay = cycleData 
-    ? differenceInDays(new Date(), new Date(cycleData.period_start_date)) + 1 
-    : null;
-  const cycleLength = cycleData?.cycle_length || null;
-  const nextPeriodDate = cycleData && cycleLength
-    ? addDays(new Date(cycleData.period_start_date), cycleLength)
-    : null;
-  const nextPeriod = nextPeriodDate
-    ? `${differenceInDays(nextPeriodDate, new Date())} days`
-    : null;
+  const today = new Date();
+  let cycleDay = null;
+  let cycleLength = null;
+  let nextPeriodDate = null;
+  let nextPeriod = null;
+
+  if (Array.isArray(cycleData) && cycleData.length > 0) {
+    // Sort cycles by start date descending
+    const sortedCycles = [...cycleData].sort((a, b) => 
+      new Date(b.period_start_date).getTime() - new Date(a.period_start_date).getTime()
+    );
+    
+    const mostRecentCycle = sortedCycles[0];
+    const mostRecentStart = new Date(mostRecentCycle.period_start_date);
+    
+    // Calculate average cycle length from completed cycles
+    const completedCycles = sortedCycles.filter(cycle => cycle.cycle_length);
+    const avgCycleLength = completedCycles.length > 0
+      ? Math.round(completedCycles.reduce((sum, cycle) => sum + cycle.cycle_length, 0) / completedCycles.length)
+      : null;
+    
+    cycleLength = avgCycleLength;
+    
+    // Calculate cycle day (days since last period started)
+    cycleDay = differenceInDays(today, mostRecentStart) + 1;
+    
+    // Predict next period based on average cycle length
+    if (avgCycleLength) {
+      nextPeriodDate = addDays(mostRecentStart, avgCycleLength);
+      const daysUntilNextPeriod = differenceInDays(nextPeriodDate, today);
+      
+      if (daysUntilNextPeriod > 0) {
+        nextPeriod = `${daysUntilNextPeriod} days`;
+      } else if (daysUntilNextPeriod === 0) {
+        nextPeriod = 'Today';
+      } else {
+        // Period is overdue
+        nextPeriod = `${Math.abs(daysUntilNextPeriod)} days overdue`;
+      }
+    }
+  }
 
   const getRiskLevel = (score: number) => {
     if (score < 30) return { level: 'Low', color: 'bg-green-500' };
@@ -93,7 +123,7 @@ export const Dashboard = ({ onEditAssessment }: { onEditAssessment?: () => void 
   const riskScore = riskData?.risk_score || null;
   const riskLevel = riskScore ? getRiskLevel(riskScore) : null;
 
-  const hasAnyData = cycleData || riskData || recentSymptoms.length > 0;
+  const hasAnyData = (Array.isArray(cycleData) && cycleData.length > 0) || riskData || recentSymptoms.length > 0;
 
   return (
     <div className="space-y-6">

@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Calendar, ChevronLeft, ChevronRight, Trash2, Edit } from 'lucide-react';
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths } from 'date-fns';
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, startOfWeek, endOfWeek, getDay } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
 import {
   Dialog,
@@ -74,7 +74,9 @@ export const CycleCalendar = () => {
 
   const monthStart = startOfMonth(currentMonth);
   const monthEnd = endOfMonth(currentMonth);
-  const days = eachDayOfInterval({ start: monthStart, end: monthEnd });
+  const calendarStart = startOfWeek(monthStart);
+  const calendarEnd = endOfWeek(monthEnd);
+  const days = eachDayOfInterval({ start: calendarStart, end: calendarEnd });
 
   const getDayType = (day: Date) => {
     const dayStr = format(day, 'yyyy-MM-dd');
@@ -221,19 +223,30 @@ export const CycleCalendar = () => {
   }
 
   const hasAnyData = symptomLogs.length > 0 || cycleData.length > 0;
+  
+  // Count unique symptom days in the month
   const monthSymptomCount = symptomLogs.filter(log => {
     const logDate = new Date(log.log_date);
-    return isSameMonth(logDate, currentMonth);
+    return isSameMonth(logDate, currentMonth) && log.symptoms && log.symptoms.length > 0;
   }).length;
   
-  const monthPeriodDays = cycleData.filter(cycle => {
-    const startDate = new Date(cycle.period_start_date);
-    return isSameMonth(startDate, currentMonth);
-  }).reduce((total, cycle) => {
-    const endDate = cycle.period_end_date ? new Date(cycle.period_end_date) : new Date(cycle.period_start_date);
-    const startDate = new Date(cycle.period_start_date);
-    return total + Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
-  }, 0);
+  // Count period days in the month
+  const monthPeriodDays = days.filter(day => {
+    if (!isSameMonth(day, currentMonth)) return false;
+    return cycleData.some(cycle => {
+      const startDate = new Date(cycle.period_start_date);
+      const endDate = cycle.period_end_date ? new Date(cycle.period_end_date) : startDate;
+      return day >= startDate && day <= endDate;
+    });
+  }).length;
+  
+  // Calculate average cycle length from completed cycles
+  const completedCycles = cycleData.filter(cycle => cycle.cycle_length).sort((a, b) => 
+    new Date(b.period_start_date).getTime() - new Date(a.period_start_date).getTime()
+  );
+  const avgCycleLength = completedCycles.length > 0 
+    ? Math.round(completedCycles.reduce((sum, cycle) => sum + cycle.cycle_length, 0) / completedCycles.length)
+    : null;
 
   return (
     <div className="max-w-6xl mx-auto space-y-6">
@@ -285,13 +298,15 @@ export const CycleCalendar = () => {
                 const dayType = getDayType(day);
                 const isToday = isSameDay(day, new Date());
                 const isSelected = selectedDate && isSameDay(day, selectedDate);
+                const isCurrentMonth = isSameMonth(day, currentMonth);
                 
                 return (
                   <div
                     key={day.toString()}
                     onClick={() => setSelectedDate(day)}
                     className={`${getDayStyles(day, dayType)} ${
-                      isToday ? 'ring-2 ring-purple-400' : ''
+                      !isCurrentMonth ? 'opacity-30' : ''
+                    } ${isToday ? 'ring-2 ring-purple-400' : ''
                     } ${isSelected ? 'ring-2 ring-purple-600' : ''}`}
                   >
                     {format(day, 'd')}
@@ -423,10 +438,10 @@ export const CycleCalendar = () => {
                   <span>Symptoms Logged:</span>
                   <span className="font-medium">{monthSymptomCount} days</span>
                 </div>
-                {cycleData.length > 0 && cycleData[0].cycle_length && (
+                {avgCycleLength && (
                   <div className="flex justify-between text-sm">
-                    <span>Cycle Length:</span>
-                    <span className="font-medium">{cycleData[0].cycle_length} days</span>
+                    <span>Avg Cycle Length:</span>
+                    <span className="font-medium">{avgCycleLength} days</span>
                   </div>
                 )}
               </CardContent>
