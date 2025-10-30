@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Calendar, TrendingUp, AlertTriangle, Heart } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useEffect, useState } from 'react';
-import { differenceInDays, addDays, isAfter, isBefore } from 'date-fns';
+import { computeCycleInsights } from '@/lib/cycleUtils';
 
 export const Dashboard = ({ onEditAssessment }: { onEditAssessment?: () => void }) => {
   const [loading, setLoading] = useState(true);
@@ -71,68 +71,11 @@ export const Dashboard = ({ onEditAssessment }: { onEditAssessment?: () => void 
     );
   }
 
-  // Calculate cycle metrics using weighted average algorithm
-  const today = new Date();
-  today.setHours(0, 0, 0, 0); // Normalize to start of day
-  let cycleDay = null;
-  let cycleLength = null;
-  let nextPeriodDate = null;
-  let nextPeriod = null;
-
-  if (Array.isArray(cycleData) && cycleData.length > 0) {
-    // Sort cycles by start date descending (most recent first)
-    const sortedCycles = [...cycleData].sort((a, b) => 
-      new Date(b.period_start_date).getTime() - new Date(a.period_start_date).getTime()
-    );
-    
-    const mostRecentCycle = sortedCycles[0];
-    const mostRecentStart = new Date(mostRecentCycle.period_start_date);
-    mostRecentStart.setHours(0, 0, 0, 0);
-    
-    // Calculate cycle day (days since last period started, starting from day 1)
-    cycleDay = differenceInDays(today, mostRecentStart) + 1;
-    
-    // Get completed cycles (those with cycle_length calculated)
-    const completedCycles = sortedCycles.filter(cycle => cycle.cycle_length && cycle.cycle_length > 0);
-    
-    if (completedCycles.length > 0) {
-      // Use weighted average for more accurate predictions
-      // Recent cycles get higher weights: [0.4, 0.3, 0.2, 0.1] for last 4 cycles
-      const weights = [0.4, 0.3, 0.2, 0.1];
-      const cyclesToUse = completedCycles.slice(0, 4); // Use up to 4 most recent cycles
-      
-      let weightedSum = 0;
-      let totalWeight = 0;
-      
-      cyclesToUse.forEach((cycle, index) => {
-        const weight = weights[index] || 0.1; // Default weight for older cycles
-        weightedSum += cycle.cycle_length * weight;
-        totalWeight += weight;
-      });
-      
-      // Calculate weighted average and round to nearest day
-      const avgCycleLength = Math.round(weightedSum / totalWeight);
-      cycleLength = avgCycleLength;
-      
-      // Predict next period: most recent period start + weighted average cycle length
-      nextPeriodDate = addDays(mostRecentStart, avgCycleLength);
-      const daysUntilNextPeriod = differenceInDays(nextPeriodDate, today);
-      
-      if (daysUntilNextPeriod > 0) {
-        nextPeriod = `${daysUntilNextPeriod} days`;
-      } else if (daysUntilNextPeriod === 0) {
-        nextPeriod = 'Today';
-      } else {
-        // Period is overdue
-        nextPeriod = `${Math.abs(daysUntilNextPeriod)} days overdue`;
-      }
-    } else {
-      // No completed cycles yet - need at least 2 periods to predict
-      cycleLength = null;
-      nextPeriod = null;
-    }
-  }
-
+  // Calculate cycle metrics using robust algorithm (derived from start dates)
+  const metrics = computeCycleInsights(Array.isArray(cycleData) ? cycleData : []);
+  const cycleDay = metrics.cycleDay;
+  const cycleLength = metrics.avgCycleLength;
+  const nextPeriod = metrics.nextPeriodLabel;
   const getRiskLevel = (score: number) => {
     if (score < 30) return { level: 'Low', color: 'bg-green-500' };
     if (score < 60) return { level: 'Moderate', color: 'bg-yellow-500' };
