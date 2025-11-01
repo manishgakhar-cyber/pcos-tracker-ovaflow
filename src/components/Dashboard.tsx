@@ -3,10 +3,92 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
-import { Calendar, TrendingUp, AlertTriangle, Heart } from 'lucide-react';
+import { Calendar, TrendingUp, AlertTriangle, Heart, Moon, Sparkles, Sun, Droplets } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useEffect, useState } from 'react';
 import { computeCycleInsights } from '@/lib/cycleUtils';
+
+type CyclePhase = {
+  name: string;
+  description: string;
+  recommendations: string[];
+  icon: React.ReactNode;
+  color: string;
+  bgColor: string;
+};
+
+const getCyclePhase = (cycleDay: number | null, cycleLength: number | null): CyclePhase | null => {
+  if (!cycleDay || !cycleLength) return null;
+
+  // Menstrual Phase (Days 1-5)
+  if (cycleDay <= 5) {
+    return {
+      name: 'Menstrual Phase',
+      description: 'Your body is shedding the uterine lining',
+      recommendations: [
+        'Rest and prioritize self-care',
+        'Stay hydrated and eat iron-rich foods',
+        'Light exercise like walking or gentle yoga',
+        'Use heat therapy for cramps'
+      ],
+      icon: <Droplets className="w-5 h-5" />,
+      color: 'text-red-700',
+      bgColor: 'bg-gradient-to-br from-red-100 to-red-50 border-red-200'
+    };
+  }
+
+  // Calculate ovulation day (typically 14 days before next period)
+  const ovulationDay = cycleLength - 14;
+  
+  // Ovulation Phase (3 days around ovulation)
+  if (cycleDay >= ovulationDay - 1 && cycleDay <= ovulationDay + 1) {
+    return {
+      name: 'Ovulation Phase',
+      description: 'Peak fertility window - ovulation occurring',
+      recommendations: [
+        'Most fertile time of your cycle',
+        'Energy levels typically highest',
+        'Great time for important tasks',
+        'Monitor for ovulation symptoms'
+      ],
+      icon: <Sparkles className="w-5 h-5" />,
+      color: 'text-yellow-700',
+      bgColor: 'bg-gradient-to-br from-yellow-100 to-yellow-50 border-yellow-200'
+    };
+  }
+
+  // Follicular Phase (After period, before ovulation)
+  if (cycleDay > 5 && cycleDay < ovulationDay - 1) {
+    return {
+      name: 'Follicular Phase',
+      description: 'Your body is preparing for ovulation',
+      recommendations: [
+        'Energy and mood typically improving',
+        'Good time for new projects',
+        'Focus on strength training',
+        'Skin may be clearer'
+      ],
+      icon: <Sun className="w-5 h-5" />,
+      color: 'text-green-700',
+      bgColor: 'bg-gradient-to-br from-green-100 to-green-50 border-green-200'
+    };
+  }
+
+  // Luteal Phase (After ovulation, before next period)
+  return {
+    name: 'Luteal Phase',
+    description: 'Your body is preparing for menstruation',
+    recommendations: [
+      'PMS symptoms may begin',
+      'Prioritize stress management',
+      'Eat balanced meals to stabilize mood',
+      'Get adequate sleep'
+    ],
+    icon: <Moon className="w-5 h-5" />,
+    color: 'text-indigo-700',
+    bgColor: 'bg-gradient-to-br from-indigo-100 to-indigo-50 border-indigo-200'
+  };
+};
 
 export const Dashboard = ({ onEditAssessment }: { onEditAssessment?: () => void }) => {
   const [loading, setLoading] = useState(true);
@@ -86,6 +168,8 @@ export const Dashboard = ({ onEditAssessment }: { onEditAssessment?: () => void 
   const riskLevel = riskScore ? getRiskLevel(riskScore) : null;
 
   const hasAnyData = (Array.isArray(cycleData) && cycleData.length > 0) || riskData || recentSymptoms.length > 0;
+  
+  const currentPhase = getCyclePhase(cycleDay, cycleLength);
 
   return (
     <div className="space-y-6">
@@ -182,6 +266,37 @@ export const Dashboard = ({ onEditAssessment }: { onEditAssessment?: () => void 
           </CardContent>
         </Card>
       </div>
+
+      {/* Cycle Phase Information */}
+      {currentPhase && (
+        <Card className={currentPhase.bgColor}>
+          <CardHeader>
+            <CardTitle className={`flex items-center ${currentPhase.color}`}>
+              {currentPhase.icon}
+              <span className="ml-2">{currentPhase.name}</span>
+              <Badge variant="secondary" className="ml-auto">
+                Day {cycleDay}
+              </Badge>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <p className={`text-sm font-medium ${currentPhase.color}`}>
+              {currentPhase.description}
+            </p>
+            <div className="space-y-2">
+              <p className="text-sm font-semibold text-gray-700">Recommendations:</p>
+              <ul className="space-y-1">
+                {currentPhase.recommendations.map((rec, idx) => (
+                  <li key={idx} className="flex items-start text-sm text-gray-600">
+                    <span className="mr-2">•</span>
+                    <span>{rec}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Recent Symptoms */}
       <Card>
