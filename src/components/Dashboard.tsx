@@ -107,12 +107,12 @@ export const Dashboard = ({ onEditAssessment }: { onEditAssessment?: () => void 
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {cycleDay && cycleLength ? (
+            {cycleDay !== null ? (
               <>
                 <div className="text-2xl font-bold text-pink-900">
                   Day {cycleDay}
                 </div>
-                <p className="text-sm text-pink-600">of {cycleLength}-day cycle</p>
+                <p className="text-sm text-pink-600">{cycleLength ? `of ${cycleLength}-day cycle` : 'Estimating cycle length'}</p>
               </>
             ) : (
               <div className="text-sm text-pink-600">No cycle data yet</div>

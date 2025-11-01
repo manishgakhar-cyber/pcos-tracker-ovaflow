@@ -67,30 +67,28 @@ export function computeCycleInsights(cycles: CycleRecord[], todayInput: Date = n
     derivedLengths.push(...dbLengths);
   }
 
+  // Determine average cycle length with sensible fallbacks
+  let avgCycleLength: number;
   if (derivedLengths.length === 0) {
-    // Not enough info to predict yet
-    return {
-      cycleDay,
-      avgCycleLength: null,
-      nextPeriodDate: null,
-      daysUntilNextPeriod: null,
-      nextPeriodLabel: null,
-    };
+    // If at least one cycle exists but we couldn't derive lengths, assume a typical 28-day cycle
+    avgCycleLength = 28;
+  } else if (derivedLengths.length === 1) {
+    avgCycleLength = derivedLengths[0];
+  } else {
+    // Weighted average using last up to 4 cycles: [0.4, 0.3, 0.2, 0.1]
+    const weights = [0.4, 0.3, 0.2, 0.1];
+    const toUse = derivedLengths.slice(0, 4);
+
+    let weightedSum = 0;
+    let totalWeight = 0;
+    toUse.forEach((len, idx) => {
+      const w = weights[idx] ?? 0.1;
+      weightedSum += len * w;
+      totalWeight += w;
+    });
+
+    avgCycleLength = Math.round(weightedSum / totalWeight);
   }
-
-  // Weighted average using last up to 4 cycles: [0.4, 0.3, 0.2, 0.1]
-  const weights = [0.4, 0.3, 0.2, 0.1];
-  const toUse = derivedLengths.slice(0, 4);
-
-  let weightedSum = 0;
-  let totalWeight = 0;
-  toUse.forEach((len, idx) => {
-    const w = weights[idx] ?? 0.1;
-    weightedSum += len * w;
-    totalWeight += w;
-  });
-
-  const avgCycleLength = Math.round(weightedSum / totalWeight);
 
   // Predict next period start
   const nextPeriodDate = addDays(mostRecentStart, avgCycleLength);
