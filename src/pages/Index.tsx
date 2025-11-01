@@ -16,6 +16,7 @@ const TUTORIAL_KEY = 'cyclewise_tutorial_completed';
 const Index = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState<User | null>(null);
+  const [userName, setUserName] = useState<string>('');
   const [hasCompletedAssessment, setHasCompletedAssessment] = useState<boolean | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [showAssessmentForm, setShowAssessmentForm] = useState(false);
@@ -27,6 +28,7 @@ const Index = () => {
       setUser(session?.user ?? null);
       
       if (session?.user) {
+        await fetchUserName(session.user.id);
         await checkAssessmentStatus(session.user.id);
         
         // Check if user has seen tutorial
@@ -45,6 +47,7 @@ const Index = () => {
       setUser(session?.user ?? null);
       
       if (session?.user) {
+        await fetchUserName(session.user.id);
         await checkAssessmentStatus(session.user.id);
         
         // Check if user has seen tutorial
@@ -53,6 +56,7 @@ const Index = () => {
           setShowTutorial(true);
         }
       } else {
+        setUserName('');
         setHasCompletedAssessment(null);
         setIsLoading(false);
       }
@@ -60,6 +64,27 @@ const Index = () => {
 
     return () => subscription.unsubscribe();
   }, []);
+
+  const fetchUserName = async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('first_name, last_name')
+        .eq('id', userId)
+        .single();
+
+      if (error) throw error;
+      
+      if (data?.first_name) {
+        const fullName = data.last_name 
+          ? `${data.first_name} ${data.last_name}`
+          : data.first_name;
+        setUserName(fullName);
+      }
+    } catch (error) {
+      console.error('Error fetching user name:', error);
+    }
+  };
 
   const checkAssessmentStatus = async (userId: string) => {
     try {
@@ -138,8 +163,8 @@ const Index = () => {
                 ? 'Update your PCOS risk assessment' 
                 : 'Complete your PCOS risk assessment to get started'}
             </p>
-            {user && (
-              <p className="text-sm text-purple-500 mt-1">{user.email}</p>
+            {userName && (
+              <p className="text-sm text-purple-500 mt-1">Welcome, {userName}!</p>
             )}
           </div>
           
@@ -169,8 +194,8 @@ const Index = () => {
             </div>
           </div>
           <p className="text-purple-600">Your comprehensive PCOS and cycle tracking companion</p>
-          {user && (
-            <p className="text-sm text-purple-500 mt-1">{user.email}</p>
+          {userName && (
+            <p className="text-sm text-purple-500 mt-1">Welcome, {userName}!</p>
           )}
         </div>
         
