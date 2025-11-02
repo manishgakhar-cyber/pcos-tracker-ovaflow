@@ -1,9 +1,32 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
+import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
+
+// Input validation schema
+const assessmentSchema = z.object({
+  age: z.number().int().min(10).max(100),
+  height: z.number().min(36).max(96), // inches
+  weight: z.number().min(50).max(500), // lbs
+  ethnicity: z.string().max(100),
+  periodFrequency: z.string().max(100),
+  cycleLength: z.number().int().min(14).max(60),
+  irregularPeriods: z.string().max(50),
+  flowIntensity: z.string().max(50),
+  symptoms: z.array(z.string()).max(20),
+  acneSeverity: z.string().max(50),
+  hairGrowth: z.string().max(50),
+  hairLoss: z.string().max(50),
+  weightChanges: z.string().max(50),
+  moodSymptoms: z.array(z.string()).max(20),
+  familyHistory: z.string().max(50),
+  medications: z.string().max(500).optional(),
+  additionalNotes: z.string().max(1000).optional(),
+});
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -11,11 +34,50 @@ serve(async (req) => {
   }
 
   try {
-    const { assessmentData } = await req.json();
+    // Authentication check
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) {
+      return new Response(
+        JSON.stringify({ error: "Authentication required" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const supabaseClient = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_ANON_KEY") ?? "",
+      { global: { headers: { Authorization: authHeader } } }
+    );
+
+    const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
+    if (authError || !user) {
+      return new Response(
+        JSON.stringify({ error: "Invalid authentication" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Parse and validate input
+    const body = await req.json();
+    const validationResult = assessmentSchema.safeParse(body.assessmentData);
+    
+    if (!validationResult.success) {
+      console.error("Validation error:", validationResult.error.errors);
+      return new Response(
+        JSON.stringify({ error: "Invalid input data. Please check all fields and try again." }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const assessmentData = validationResult.data;
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
 
     if (!LOVABLE_API_KEY) {
-      throw new Error("LOVABLE_API_KEY is not configured");
+      console.error("LOVABLE_API_KEY is not configured");
+      return new Response(
+        JSON.stringify({ error: "Service configuration error" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
     const systemPrompt = `You are a medical assessment AI specializing in PCOS (Polycystic Ovary Syndrome) risk evaluation. 
@@ -105,8 +167,11 @@ Provide your analysis.`;
         );
       }
       const errorText = await response.text();
-      console.error("AI gateway error:", response.status, errorText);
-      throw new Error("AI gateway error");
+      console.error("AI gateway error:", response.status);
+      return new Response(
+        JSON.stringify({ error: "Failed to process assessment. Please try again." }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
     const data = await response.json();
@@ -130,10 +195,10 @@ Provide your analysis.`;
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {
-    console.error("Error in analyze-pcos-assessment:", error);
+    console.error("Error in analyze-pcos-assessment:", error instanceof Error ? error.message : "Unknown error");
     return new Response(
       JSON.stringify({ 
-        error: error instanceof Error ? error.message : "Unknown error occurred"
+        error: "Failed to process assessment. Please try again."
       }),
       { 
         status: 500, 
