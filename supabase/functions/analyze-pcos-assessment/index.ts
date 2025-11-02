@@ -62,7 +62,7 @@ serve(async (req) => {
     const validationResult = assessmentSchema.safeParse(body.assessmentData);
     
     if (!validationResult.success) {
-      console.error("Validation error:", validationResult.error.errors);
+      console.error("Assessment validation failed");
       return new Response(
         JSON.stringify({ error: "Invalid input data. Please check all fields and try again." }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -166,8 +166,7 @@ Provide your analysis.`;
           { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
-      const errorText = await response.text();
-      console.error("AI gateway error:", response.status);
+      console.error("AI gateway request failed");
       return new Response(
         JSON.stringify({ error: "Failed to process assessment. Please try again." }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -195,7 +194,7 @@ Provide your analysis.`;
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {
-    console.error("Error in analyze-pcos-assessment:", error instanceof Error ? error.message : "Unknown error");
+    console.error("Assessment processing error occurred");
     return new Response(
       JSON.stringify({ 
         error: "Failed to process assessment. Please try again."
