@@ -118,7 +118,7 @@ const Index = () => {
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
-    navigate('/auth');
+    navigate('/');
   };
 
   const handleCloseTutorial = () => {

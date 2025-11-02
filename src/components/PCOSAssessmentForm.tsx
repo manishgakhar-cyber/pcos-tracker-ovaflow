@@ -86,11 +86,12 @@ const step3Schema = assessmentSchema.pick({ symptoms: true, acneSeverity: true, 
 const step4Schema = assessmentSchema.pick({ familyHistory: true, medications: true, additionalNotes: true });
 
 interface PCOSAssessmentFormProps {
-  onComplete?: () => void;
+  onComplete?: (data?: any) => void;
   isEdit?: boolean;
+  guestMode?: boolean;
 }
 
-export const PCOSAssessmentForm = ({ onComplete, isEdit = false }: PCOSAssessmentFormProps = {}) => {
+export const PCOSAssessmentForm = ({ onComplete, isEdit = false, guestMode = false }: PCOSAssessmentFormProps = {}) => {
   const [currentStep, setCurrentStep] = useState(1);
   const [showResults, setShowResults] = useState(false);
   const { toast } = useToast();
@@ -247,6 +248,21 @@ export const PCOSAssessmentForm = ({ onComplete, isEdit = false }: PCOSAssessmen
     const formData = form.getValues();
     
     try {
+      // Guest mode: Skip authentication and just calculate results locally
+      if (guestMode) {
+        toast({
+          title: "Assessment Complete!",
+          description: "View your results below.",
+        });
+        
+        if (onComplete) {
+          onComplete(formData);
+        }
+        setIsSubmitting(false);
+        return;
+      }
+
+      // Authenticated mode: Save to database with AI analysis
       const { data: { user } } = await supabase.auth.getUser();
       
       if (!user) {
@@ -312,7 +328,9 @@ export const PCOSAssessmentForm = ({ onComplete, isEdit = false }: PCOSAssessmen
           : "Your PCOS risk assessment has been saved successfully.",
       });
       
-      setShowResults(true);
+      if (onComplete) {
+        onComplete();
+      }
     } catch (error) {
       console.error('Assessment submission error:', error);
       const errorMessage = error instanceof Error ? error.message : 'Failed to save assessment. Please try again.';
@@ -332,7 +350,8 @@ export const PCOSAssessmentForm = ({ onComplete, isEdit = false }: PCOSAssessmen
     form.reset();
   };
 
-  if (showResults) {
+  // In guest mode, don't show results inline - parent handles it
+  if (showResults && !guestMode) {
     return (
       <PCOSResults 
         assessmentData={form.getValues()} 

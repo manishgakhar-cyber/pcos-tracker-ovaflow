@@ -47,7 +47,7 @@ const Auth = () => {
         email,
         password,
         options: {
-          emailRedirectTo: `${window.location.origin}/`,
+          emailRedirectTo: `${window.location.origin}/dashboard`,
           data: {
             first_name: firstName.trim(),
             last_name: lastName.trim() || null,
@@ -68,12 +68,11 @@ const Auth = () => {
       } else {
         toast({
           title: 'Success!',
-          description: 'Account created successfully. You can now sign in.',
+          description: 'Account created successfully. Signing you in...',
         });
-        setEmail('');
-        setPassword('');
-        setFirstName('');
-        setLastName('');
+        
+        // Auto sign in after successful signup
+        navigate('/dashboard');
       }
     } catch (error: any) {
       toast({
@@ -126,7 +125,7 @@ const Auth = () => {
           title: 'Welcome back!',
           description: 'Signed in successfully.',
         });
-        navigate('/');
+        navigate('/dashboard');
       }
     } catch (error: any) {
       toast({

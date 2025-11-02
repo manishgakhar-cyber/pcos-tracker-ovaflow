@@ -340,7 +340,7 @@ export const PCOSResults = ({ assessmentData, onRetakeAssessment, onComplete }: 
             className="bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 flex items-center space-x-2"
           >
             <Calendar className="w-4 h-4" />
-            <span>Start Tracking Your Cycle</span>
+            <span>Sign Up to Save & Track</span>
           </Button>
         </div>
 

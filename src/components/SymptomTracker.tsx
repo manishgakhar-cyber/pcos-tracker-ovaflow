@@ -389,6 +389,7 @@ export const SymptomTracker = () => {
                 mode="single"
                 selected={selectedDate}
                 onSelect={setSelectedDate}
+                disabled={(date) => date > new Date() || date < new Date(new Date().setFullYear(new Date().getFullYear() - 2))}
                 initialFocus
                 className="pointer-events-auto"
               />
@@ -424,6 +425,7 @@ export const SymptomTracker = () => {
                     mode="single"
                     selected={periodStartDate}
                     onSelect={setPeriodStartDate}
+                    disabled={(date) => date > new Date() || date < new Date(new Date().setFullYear(new Date().getFullYear() - 2))}
                     initialFocus
                     className="pointer-events-auto"
                   />
@@ -452,7 +454,13 @@ export const SymptomTracker = () => {
                     mode="single"
                     selected={periodEndDate}
                     onSelect={setPeriodEndDate}
-                    disabled={(date) => periodStartDate ? date < periodStartDate : false}
+                    disabled={(date) => {
+                      const today = new Date();
+                      today.setHours(23, 59, 59, 999);
+                      if (date > today) return true;
+                      if (periodStartDate && date < periodStartDate) return true;
+                      return false;
+                    }}
                     initialFocus
                     className="pointer-events-auto"
                   />
