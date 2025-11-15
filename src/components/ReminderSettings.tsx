@@ -1,19 +1,15 @@
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Bell, Save } from 'lucide-react';
+import { Bell, ShoppingBag, Calendar } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 
 export const ReminderSettings = () => {
-  const [enabled, setEnabled] = useState(true);
-  const [daysBefore, setDaysBefore] = useState('3');
-  const [reminderTime, setReminderTime] = useState('09:00');
+  const [periodReminder, setPeriodReminder] = useState(true);
+  const [shoppingReminder, setShoppingReminder] = useState(true);
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -34,9 +30,9 @@ export const ReminderSettings = () => {
       if (error && error.code !== 'PGRST116') throw error;
 
       if (data) {
-        setEnabled(data.enabled);
-        setDaysBefore(data.days_before.toString());
-        setReminderTime(data.reminder_time.slice(0, 5));
+        setPeriodReminder(data.enabled);
+        // Use days_before to determine shopping reminder (if > 0, shopping is enabled)
+        setShoppingReminder(data.days_before >= 3);
       }
     } catch (error) {
       console.error('Error fetching reminder settings:', error);
@@ -45,17 +41,22 @@ export const ReminderSettings = () => {
     }
   };
 
-  const saveSettings = async () => {
-    setSaving(true);
+  const handleToggle = async (type: 'period' | 'shopping', value: boolean) => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
+      if (type === 'period') {
+        setPeriodReminder(value);
+      } else {
+        setShoppingReminder(value);
+      }
+
       const settings = {
         user_id: user.id,
-        enabled,
-        days_before: parseInt(daysBefore),
-        reminder_time: `${reminderTime}:00`,
+        enabled: type === 'period' ? value : periodReminder,
+        days_before: type === 'shopping' && value ? 3 : 0,
+        reminder_time: '09:00:00',
       };
 
       const { data: existing } = await supabase
@@ -76,18 +77,16 @@ export const ReminderSettings = () => {
       }
 
       toast({
-        title: 'Settings Saved',
-        description: 'Your reminder preferences have been updated',
+        title: 'Reminder Updated',
+        description: `${type === 'period' ? 'Period' : 'Shopping'} reminder ${value ? 'enabled' : 'disabled'}`,
       });
     } catch (error) {
-      console.error('Error saving settings:', error);
+      console.error('Error updating settings:', error);
       toast({
         title: 'Error',
-        description: 'Failed to save settings',
+        description: 'Failed to update reminder',
         variant: 'destructive',
       });
-    } finally {
-      setSaving(false);
     }
   };
 
@@ -106,60 +105,57 @@ export const ReminderSettings = () => {
       <CardHeader>
         <CardTitle className="flex items-center text-purple-900">
           <Bell className="w-5 h-5 mr-2" />
-          Period Reminders
+          Smart Reminders
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="flex items-center justify-between">
-          <Label htmlFor="reminder-enabled" className="text-base">
-            Enable Reminders
-          </Label>
-          <Switch
-            id="reminder-enabled"
-            checked={enabled}
-            onCheckedChange={setEnabled}
-          />
+        <p className="text-sm text-gray-600 mb-4">
+          Get helpful notifications to stay prepared
+        </p>
+
+        <div className="space-y-4">
+          <div className="flex items-start justify-between p-3 bg-pink-50 rounded-lg border border-pink-200">
+            <div className="flex items-start gap-3 flex-1">
+              <Calendar className="w-5 h-5 text-pink-700 mt-0.5" />
+              <div className="flex-1">
+                <Label htmlFor="period-reminder" className="text-sm font-medium text-gray-900 cursor-pointer">
+                  Period Arrival Alert
+                </Label>
+                <p className="text-xs text-gray-600 mt-0.5">
+                  Get notified 3 days before your expected period
+                </p>
+              </div>
+            </div>
+            <Switch
+              id="period-reminder"
+              checked={periodReminder}
+              onCheckedChange={(checked) => handleToggle('period', checked)}
+            />
+          </div>
+
+          <div className="flex items-start justify-between p-3 bg-purple-50 rounded-lg border border-purple-200">
+            <div className="flex items-start gap-3 flex-1">
+              <ShoppingBag className="w-5 h-5 text-purple-700 mt-0.5" />
+              <div className="flex-1">
+                <Label htmlFor="shopping-reminder" className="text-sm font-medium text-gray-900 cursor-pointer">
+                  Period Prep Reminder
+                </Label>
+                <p className="text-xs text-gray-600 mt-0.5">
+                  Reminder to stock up on pads, tampons, or pain relief
+                </p>
+              </div>
+            </div>
+            <Switch
+              id="shopping-reminder"
+              checked={shoppingReminder}
+              onCheckedChange={(checked) => handleToggle('shopping', checked)}
+            />
+          </div>
         </div>
 
-        {enabled && (
-          <>
-            <div className="space-y-2">
-              <Label htmlFor="days-before">Remind me before period</Label>
-              <Select value={daysBefore} onValueChange={setDaysBefore}>
-                <SelectTrigger id="days-before">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="1">1 day before</SelectItem>
-                  <SelectItem value="2">2 days before</SelectItem>
-                  <SelectItem value="3">3 days before</SelectItem>
-                  <SelectItem value="5">5 days before</SelectItem>
-                  <SelectItem value="7">7 days before</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="reminder-time">Reminder time</Label>
-              <input
-                id="reminder-time"
-                type="time"
-                value={reminderTime}
-                onChange={(e) => setReminderTime(e.target.value)}
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-              />
-            </div>
-
-            <p className="text-sm text-muted-foreground">
-              You'll receive a reminder {daysBefore} day{daysBefore !== '1' ? 's' : ''} before your predicted period at {reminderTime}
-            </p>
-          </>
-        )}
-
-        <Button onClick={saveSettings} disabled={saving} className="w-full">
-          <Save className="w-4 h-4 mr-2" />
-          {saving ? 'Saving...' : 'Save Settings'}
-        </Button>
+        <p className="text-xs text-gray-500 mt-4">
+          All reminders are sent at 9:00 AM based on your cycle predictions
+        </p>
       </CardContent>
     </Card>
   );
