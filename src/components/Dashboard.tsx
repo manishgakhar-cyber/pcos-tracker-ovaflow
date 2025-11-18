@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
-import { Calendar, TrendingUp, AlertTriangle, Heart, Moon, Sparkles, Sun, Droplets } from 'lucide-react';
+import { Calendar, TrendingUp, Heart, Moon, Sparkles, Sun, Droplets } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useEffect, useState } from 'react';
 import { computeCycleInsights } from '@/lib/cycleUtils';
@@ -110,7 +110,6 @@ export const Dashboard = ({ onEditAssessment }: { onEditAssessment?: () => void 
         .eq('user_id', user.id)
         .order('period_start_date', { ascending: false });
 
-      // Fetch PCOS assessment
       const { data: assessment } = await supabase
         .from('pcos_assessments')
         .select('*')
@@ -128,7 +127,10 @@ export const Dashboard = ({ onEditAssessment }: { onEditAssessment?: () => void 
         .gte('log_date', sevenDaysAgo.toISOString().split('T')[0])
         .order('log_date', { ascending: false });
 
-      setCycleData(cycles || []);
+      // Compute cycle insights
+      const insights = computeCycleInsights(cycles || []);
+      
+      setCycleData(insights);
       setRiskData(assessment?.[0] || null);
       
       // Extract unique symptoms from recent logs
@@ -144,237 +146,216 @@ export const Dashboard = ({ onEditAssessment }: { onEditAssessment?: () => void 
     fetchUserData();
   }, []);
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-center space-y-3">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-500 mx-auto"></div>
-          <p className="text-gray-600">Loading your health data...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // Calculate cycle metrics using robust algorithm (derived from start dates)
-  const metrics = computeCycleInsights(Array.isArray(cycleData) ? cycleData : []);
-  const cycleDay = metrics.cycleDay;
-  const cycleLength = metrics.avgCycleLength;
-  const nextPeriod = metrics.nextPeriodLabel;
-  const getRiskLevel = (score: number) => {
-    if (score < 30) return { level: 'Low', color: 'bg-green-500' };
-    if (score < 60) return { level: 'Moderate', color: 'bg-yellow-500' };
-    return { level: 'High', color: 'bg-red-500' };
-  };
-
-  const riskScore = riskData?.risk_score || null;
-  const riskLevel = riskScore ? getRiskLevel(riskScore) : null;
-
-  const hasAnyData = (Array.isArray(cycleData) && cycleData.length > 0) || riskData || recentSymptoms.length > 0;
-  
-  const currentPhase = getCyclePhase(cycleDay, cycleLength);
+  const currentPhase = getCyclePhase(cycleData?.cycleDay, cycleData?.avgCycleLength);
 
   return (
-    <div className="space-y-6">
-      {/* Welcome Section */}
-      <div className="text-center space-y-2">
-        <h2 className="text-3xl font-bold text-gray-900">Welcome back!</h2>
-        <p className="text-gray-600">
-          {hasAnyData ? "Here's your health overview" : "Start tracking to see your health insights"}
-        </p>
-      </div>
-
-      {/* Key Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="bg-gradient-to-br from-pink-100 to-pink-50 border-pink-200">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-pink-700 flex items-center">
-              <Calendar className="w-4 h-4 mr-2" />
-              Cycle Day
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {cycleDay !== null ? (
-              <>
-                <div className="text-2xl font-bold text-pink-900">
-                  Day {cycleDay}
+    <div className="p-4 md:p-6 space-y-6 max-w-7xl mx-auto min-h-screen">
+      {loading ? (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
+          {[1, 2, 3].map((i) => (
+            <Card key={i} className="animate-pulse shadow-card">
+              <CardHeader><div className="h-4 bg-muted rounded w-1/2"></div></CardHeader>
+              <CardContent><div className="h-24 bg-muted/50 rounded"></div></CardContent>
+            </Card>
+          ))}
+        </div>
+      ) : (
+        <>
+          {/* Hero Cycle Overview */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
+            {/* Current Cycle Day */}
+            <Card className="relative overflow-hidden shadow-card border-2 hover:shadow-soft transition-all duration-300">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-primary/10 to-transparent rounded-full -mr-16 -mt-16" />
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-semibold">Current Cycle Day</CardTitle>
+                <div className="p-2 rounded-full bg-primary/10">
+                  <Calendar className="h-5 w-5 text-primary" />
                 </div>
-                <p className="text-sm text-pink-600">{cycleLength ? `of ${cycleLength}-day cycle` : 'Estimating cycle length'}</p>
-              </>
-            ) : (
-              <div className="text-sm text-pink-600">No cycle data yet</div>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card className="bg-gradient-to-br from-purple-100 to-purple-50 border-purple-200">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-purple-700 flex items-center">
-              <Heart className="w-4 h-4 mr-2" />
-              Next Period
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {nextPeriod ? (
-              <>
-                <div className="text-2xl font-bold text-purple-900">
-                  {nextPeriod}
+              </CardHeader>
+              <CardContent>
+                <div className="text-4xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+                  {cycleData?.cycleDay !== null ? `Day ${cycleData.cycleDay}` : '—'}
                 </div>
-                <p className="text-sm text-purple-600">Expected date</p>
-              </>
-            ) : (
-              <div className="text-sm text-purple-600">No cycle data yet</div>
-            )}
-          </CardContent>
-        </Card>
+                <p className="text-xs text-muted-foreground mt-2 font-medium">
+                  {cycleData?.avgCycleLength ? `of ${cycleData.avgCycleLength}-day cycle` : 'Track your period to see insights'}
+                </p>
+              </CardContent>
+            </Card>
 
-        <Card className="bg-gradient-to-br from-blue-100 to-blue-50 border-blue-200">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-blue-700 flex items-center">
-              <TrendingUp className="w-4 h-4 mr-2" />
-              PCOS Risk
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {riskScore && riskLevel ? (
-              <>
-                <div className="flex items-center space-x-2">
-                  <div className="text-2xl font-bold text-blue-900">
-                    {riskScore}%
-                  </div>
-                  <Badge variant="secondary" className={`${riskLevel.color} text-white`}>
-                    {riskLevel.level}
-                  </Badge>
+            {/* Next Period Prediction */}
+            <Card className="relative overflow-hidden shadow-card border-2 hover:shadow-soft transition-all duration-300">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-secondary/10 to-transparent rounded-full -mr-16 -mt-16" />
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-semibold">Next Period</CardTitle>
+                <div className="p-2 rounded-full bg-secondary/10">
+                  <TrendingUp className="h-5 w-5 text-secondary" />
                 </div>
-                <Progress value={riskScore} className="mt-2" />
-              </>
-            ) : (
-              <div className="text-sm text-blue-600">Assessment completed</div>
-            )}
-          </CardContent>
-        </Card>
+              </CardHeader>
+              <CardContent>
+                <div className="text-4xl font-bold bg-gradient-to-r from-secondary to-accent bg-clip-text text-transparent">
+                  {cycleData?.nextPeriodDate
+                    ? new Date(cycleData.nextPeriodDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+                    : '—'}
+                </div>
+                <p className="text-xs text-muted-foreground mt-2 font-medium">
+                  {cycleData?.daysUntilNextPeriod !== null
+                    ? `in ${cycleData.daysUntilNextPeriod} days`
+                    : 'Need more cycle data'}
+                </p>
+              </CardContent>
+            </Card>
 
-        <Card className="bg-gradient-to-br from-orange-100 to-orange-50 border-orange-200">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-orange-700 flex items-center">
-              <AlertTriangle className="w-4 h-4 mr-2" />
-              Active Symptoms
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-orange-900">
-              {recentSymptoms.length}
-            </div>
-            <p className="text-sm text-orange-600">This week</p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Cycle Phase Information */}
-      {currentPhase && (
-        <Card className={currentPhase.bgColor}>
-          <CardHeader>
-            <CardTitle className={`flex items-center ${currentPhase.color}`}>
-              {currentPhase.icon}
-              <span className="ml-2">{currentPhase.name}</span>
-              <Badge variant="secondary" className="ml-auto">
-                Day {cycleDay}
-              </Badge>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <p className={`text-sm font-medium ${currentPhase.color}`}>
-              {currentPhase.description}
-            </p>
-            <div className="space-y-2">
-              <p className="text-sm font-semibold text-gray-700">Recommendations:</p>
-              <ul className="space-y-1">
-                {currentPhase.recommendations.map((rec, idx) => (
-                  <li key={idx} className="flex items-start text-sm text-gray-600">
-                    <span className="mr-2">•</span>
-                    <span>{rec}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Recent Symptoms */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center text-gray-900">
-            <AlertTriangle className="w-5 h-5 mr-2 text-orange-500" />
-            Recent Symptoms
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {recentSymptoms.length > 0 ? (
-            <div className="flex flex-wrap gap-2">
-              {recentSymptoms.map((symptom, index) => (
-                <Badge key={index} variant="outline" className="bg-pink-50 text-pink-700 border-pink-200">
-                  {symptom}
-                </Badge>
-              ))}
-            </div>
-          ) : (
-            <p className="text-sm text-gray-500">No symptoms logged this week</p>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Reminder Settings */}
-      <ReminderSettings />
-
-      {/* Referral & Feedback */}
-      <ReferralFeedback />
-
-      {/* Insights */}
-      {!hasAnyData && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center text-gray-900">
-              <TrendingUp className="w-5 h-5 mr-2 text-blue-500" />
-              Getting Started
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              <div className="flex items-start space-x-3 p-3 bg-blue-50 rounded-lg border border-blue-100">
-                <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 flex-shrink-0"></div>
-                <p className="text-sm text-blue-800">Track your symptoms daily to identify patterns</p>
-              </div>
-              <div className="flex items-start space-x-3 p-3 bg-blue-50 rounded-lg border border-blue-100">
-                <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 flex-shrink-0"></div>
-                <p className="text-sm text-blue-800">Log your cycle information in the Calendar tab</p>
-              </div>
-              <div className="flex items-start space-x-3 p-3 bg-blue-50 rounded-lg border border-blue-100">
-                <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 flex-shrink-0"></div>
-                <p className="text-sm text-blue-800">Check back regularly to see personalized health insights</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Edit Assessment Option */}
-      <Card className="bg-gradient-to-br from-pink-50 to-purple-50 border-pink-200">
-        <CardContent className="pt-6">
-          <div className="flex items-center justify-between">
-            <div className="space-y-1">
-              <h3 className="font-semibold text-gray-900">Need to update your assessment?</h3>
-              <p className="text-sm text-gray-600">Retake your PCOS risk assessment if your symptoms have changed</p>
-            </div>
-            <Button 
-              variant="outline" 
-              onClick={onEditAssessment}
-              className="ml-4"
-            >
-              Edit Assessment
-            </Button>
+            {/* PCOS Risk Assessment */}
+            <Card className="relative overflow-hidden shadow-card border-2 hover:shadow-soft transition-all duration-300">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-accent/10 to-transparent rounded-full -mr-16 -mt-16" />
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-semibold">PCOS Risk</CardTitle>
+                <div className="p-2 rounded-full bg-accent/10">
+                  <Heart className="h-5 w-5 text-accent" />
+                </div>
+              </CardHeader>
+              <CardContent>
+                {riskData ? (
+                  <>
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-4xl font-bold bg-gradient-to-r from-accent to-destructive bg-clip-text text-transparent">
+                        {riskData.risk_score}
+                      </span>
+                      <span className="text-sm text-muted-foreground font-medium">/100</span>
+                    </div>
+                    <div className="flex items-center gap-2 mt-2">
+                      <Badge
+                        className="shadow-sm"
+                        variant={
+                          riskData.risk_level === 'High'
+                            ? 'destructive'
+                            : riskData.risk_level === 'Moderate'
+                            ? 'default'
+                            : 'secondary'
+                        }
+                      >
+                        {riskData.risk_level} Risk
+                      </Badge>
+                    </div>
+                  </>
+                ) : (
+                  <Button variant="outline" size="sm" onClick={onEditAssessment} className="mt-2">
+                    Take Assessment
+                  </Button>
+                )}
+              </CardContent>
+            </Card>
           </div>
-        </CardContent>
-      </Card>
+
+          {/* Cycle Phase Insights */}
+          {currentPhase && (
+            <Card className={`border-2 shadow-card ${currentPhase.bgColor} overflow-hidden relative`}>
+              <div className="absolute top-0 right-0 w-64 h-64 opacity-30">
+                <div className="absolute inset-0 bg-gradient-to-br from-white/40 to-transparent rounded-full transform translate-x-1/2 -translate-y-1/2" />
+              </div>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-3">
+                  <div className={`p-2 rounded-xl bg-white/50 ${currentPhase.color}`}>
+                    {currentPhase.icon}
+                  </div>
+                  <span className="text-xl">{currentPhase.name}</span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4 relative">
+                <p className="text-sm text-foreground/80 font-medium">{currentPhase.description}</p>
+                <div className="bg-white/50 dark:bg-black/20 rounded-lg p-4">
+                  <p className="text-sm font-semibold mb-3 flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-primary" />
+                    Recommendations:
+                  </p>
+                  <ul className="space-y-2">
+                    {currentPhase.recommendations.map((rec, idx) => (
+                      <li key={idx} className="text-sm flex items-start gap-2">
+                        <span className={`mt-1 font-bold ${currentPhase.color}`}>✓</span>
+                        <span className="text-foreground/90">{rec}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Recent Activity & Insights */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
+            {/* Recent Symptoms */}
+            <Card className="shadow-card border-2 hover:shadow-soft transition-all duration-300">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <div className="p-2 rounded-lg bg-primary/10">
+                    <Heart className="h-5 w-5 text-primary" />
+                  </div>
+                  Recent Symptoms
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {recentSymptoms.length > 0 ? (
+                  <div className="flex flex-wrap gap-2">
+                    {recentSymptoms.map((symptom, idx) => (
+                      <Badge 
+                        key={idx} 
+                        variant="secondary"
+                        className="shadow-sm px-3 py-1"
+                      >
+                        {symptom}
+                      </Badge>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground">No recent symptoms logged</p>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Cycle Progress */}
+            <Card className="shadow-card border-2 hover:shadow-soft transition-all duration-300">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <div className="p-2 rounded-lg bg-secondary/10">
+                    <TrendingUp className="h-5 w-5 text-secondary" />
+                  </div>
+                  Cycle Progress
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {cycleData?.cycleDay && cycleData?.avgCycleLength ? (
+                  <>
+                    <div>
+                      <div className="flex justify-between text-sm mb-3 font-medium">
+                        <span className="text-primary">Day {cycleData.cycleDay}</span>
+                        <span className="text-muted-foreground">of {cycleData.avgCycleLength}</span>
+                      </div>
+                      <Progress 
+                        value={(cycleData.cycleDay / cycleData.avgCycleLength) * 100}
+                        className="h-3"
+                      />
+                    </div>
+                    <div className="bg-muted/50 rounded-lg p-3">
+                      <p className="text-sm font-medium text-foreground">
+                        {cycleData.daysUntilNextPeriod !== null &&
+                          `${cycleData.daysUntilNextPeriod} days until next period`}
+                      </p>
+                    </div>
+                  </>
+                ) : (
+                  <p className="text-sm text-muted-foreground">Start tracking to see progress</p>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Settings Section */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
+            <ReminderSettings />
+            <ReferralFeedback />
+          </div>
+        </>
+      )}
     </div>
   );
 };
