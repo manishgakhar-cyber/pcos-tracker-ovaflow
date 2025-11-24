@@ -35,11 +35,12 @@ const assessmentSchema = z.object({
   // Period Details - Step 2
   periodFrequency: z.string().min(1, 'Please select your period frequency'),
   cycleLength: z.string()
-    .refine((val) => val === '' || (!isNaN(Number(val)) && Number(val) >= 14 && Number(val) <= 60), 
+    .min(1, 'Cycle length is required')
+    .refine((val) => !isNaN(Number(val)) && Number(val) >= 14 && Number(val) <= 60, 
       'Cycle length must be between 14 and 60 days'),
-  lastPeriodDate: z.string(),
-  flowIntensity: z.string(),
-  irregularPeriods: z.string(),
+  lastPeriodDate: z.string().min(1, 'Last period date is required'),
+  flowIntensity: z.string().min(1, 'Please select flow intensity'),
+  irregularPeriods: z.string().min(1, 'Please answer this question'),
   
   // Symptoms - Step 3
   symptoms: z.array(z.string()),
