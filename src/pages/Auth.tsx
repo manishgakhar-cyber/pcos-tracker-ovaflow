@@ -11,7 +11,8 @@ import { z } from 'zod';
 
 const emailSchema = z.string().email('Invalid email address');
 const passwordSchema = z.string().min(6, 'Password must be at least 6 characters');
-const nameSchema = z.string().min(1, 'First name is required').max(50, 'First name must be less than 50 characters');
+const firstNameSchema = z.string().min(1, 'First name is required').max(50, 'First name must be less than 50 characters');
+const lastNameSchema = z.string().min(1, 'Last name is required').max(50, 'Last name must be less than 50 characters');
 
 const Auth = () => {
   const navigate = useNavigate();
@@ -29,7 +30,8 @@ const Auth = () => {
     try {
       emailSchema.parse(email);
       passwordSchema.parse(password);
-      nameSchema.parse(firstName);
+      firstNameSchema.parse(firstName);
+      lastNameSchema.parse(lastName);
     } catch (error) {
       if (error instanceof z.ZodError) {
         toast({
@@ -50,7 +52,7 @@ const Auth = () => {
           emailRedirectTo: `${window.location.origin}/dashboard`,
           data: {
             first_name: firstName.trim(),
-            last_name: lastName.trim() || null,
+            last_name: lastName.trim(),
           },
         },
       });
@@ -199,13 +201,14 @@ const Auth = () => {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="signup-lastname">Last Name (Optional)</Label>
+                  <Label htmlFor="signup-lastname">Last Name</Label>
                   <Input
                     id="signup-lastname"
                     type="text"
                     placeholder="Doe"
                     value={lastName}
                     onChange={(e) => setLastName(e.target.value)}
+                    required
                     disabled={loading}
                   />
                 </div>
