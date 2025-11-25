@@ -276,10 +276,31 @@ export const PCOSAssessmentForm = ({ onComplete, isEdit = false, guestMode = fal
         description: "Our AI is analyzing your assessment data with medical databases...",
       });
 
+      // Convert string values to numbers for the edge function
+      const assessmentPayload = {
+        age: Number(formData.age),
+        height: formData.height ? Number(formData.height) : 0,
+        weight: formData.weight ? Number(formData.weight) : 0,
+        ethnicity: formData.ethnicity,
+        periodFrequency: formData.periodFrequency,
+        cycleLength: Number(formData.cycleLength),
+        irregularPeriods: formData.irregularPeriods,
+        flowIntensity: formData.flowIntensity,
+        symptoms: formData.symptoms,
+        acneSeverity: formData.acneSeverity,
+        hairGrowth: formData.hairGrowth,
+        hairLoss: formData.hairLoss,
+        weightChanges: formData.weightChanges,
+        moodSymptoms: formData.moodSymptoms,
+        familyHistory: formData.familyHistory,
+        medications: formData.medications,
+        additionalNotes: formData.additionalNotes
+      };
+
       const { data: analysisData, error: analysisError } = await supabase.functions.invoke(
         'analyze-pcos-assessment',
         {
-          body: { assessmentData: formData }
+          body: { assessmentData: assessmentPayload }
         }
       );
 

@@ -10,8 +10,8 @@ const corsHeaders = {
 // Input validation schema
 const assessmentSchema = z.object({
   age: z.number().int().min(10).max(100),
-  height: z.number().min(36).max(96), // inches
-  weight: z.number().min(50).max(500), // lbs
+  height: z.number().min(0).max(96).optional(), // inches, optional
+  weight: z.number().min(0).max(500).optional(), // lbs, optional
   ethnicity: z.string().max(100),
   periodFrequency: z.string().max(100),
   cycleLength: z.number().int().min(14).max(60),
@@ -62,9 +62,12 @@ serve(async (req) => {
     const validationResult = assessmentSchema.safeParse(body.assessmentData);
     
     if (!validationResult.success) {
-      console.error("Assessment validation failed");
+      console.error("Assessment validation failed:", validationResult.error);
       return new Response(
-        JSON.stringify({ error: "Invalid input data. Please check all fields and try again." }),
+        JSON.stringify({ 
+          error: "Invalid input data. Please check all fields and try again.",
+          details: validationResult.error.errors 
+        }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -115,8 +118,8 @@ Return ONLY a JSON object with this exact structure (no additional text):
     const userPrompt = `Please analyze this PCOS assessment data:
 
 Age: ${assessmentData.age}
-Height: ${assessmentData.height} inches
-Weight: ${assessmentData.weight} lbs
+Height: ${assessmentData.height || 'Not provided'} ${assessmentData.height ? 'inches' : ''}
+Weight: ${assessmentData.weight || 'Not provided'} ${assessmentData.weight ? 'lbs' : ''}
 Ethnicity: ${assessmentData.ethnicity}
 
 Period Frequency: ${assessmentData.periodFrequency}
