@@ -25,11 +25,11 @@ const assessmentSchema = z.object({
     .refine((val) => !isNaN(Number(val)), 'Age must be a valid number')
     .refine((val) => Number(val) >= 10 && Number(val) <= 100, 'Age must be between 10 and 100'),
   height: z.string()
-    .refine((val) => val === '' || (!isNaN(Number(val)) && Number(val) >= 48 && Number(val) <= 96), 
-      'Height must be between 48 and 96 inches'),
+    .refine((val) => val === '' || (!isNaN(Number(val)) && Number(val) > 0 && Number(val) <= 96), 
+      'Height must be a positive number up to 96 inches'),
   weight: z.string()
-    .refine((val) => val === '' || (!isNaN(Number(val)) && Number(val) >= 50 && Number(val) <= 500), 
-      'Weight must be between 50 and 500 lbs'),
+    .refine((val) => val === '' || (!isNaN(Number(val)) && Number(val) > 0 && Number(val) <= 500), 
+      'Weight must be a positive number up to 500 lbs'),
   ethnicity: z.string(),
   
   // Period Details - Step 2
@@ -129,6 +129,7 @@ export const PCOSAssessmentForm = ({ onComplete, isEdit = false, guestMode = fal
   const physicalSymptoms = [
     'Irregular or missed periods',
     'Heavy menstrual bleeding',
+    'Cramps',
     'Acne (especially on face, chest, back)',
     'Excessive hair growth (face, chest, abdomen)',
     'Male-pattern hair loss',
