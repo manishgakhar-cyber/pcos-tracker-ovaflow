@@ -14,7 +14,6 @@ interface AssessmentData {
   periodFrequency: string;
   lastPeriodDate: string;
   flowIntensity: string;
-  irregularPeriods: string;
   symptoms: string[];
   acneSeverity: string;
   hairGrowth: string;
