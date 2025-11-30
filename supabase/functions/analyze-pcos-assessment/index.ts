@@ -15,7 +15,6 @@ const assessmentSchema = z.object({
   ethnicity: z.string().max(100),
   periodFrequency: z.string().max(100),
   cycleLength: z.number().int().min(14).max(60),
-  irregularPeriods: z.string().max(50),
   flowIntensity: z.string().max(50),
   symptoms: z.array(z.string()).max(20),
   acneSeverity: z.string().max(50),
@@ -124,7 +123,6 @@ Ethnicity: ${assessmentData.ethnicity}
 
 Period Frequency: ${assessmentData.periodFrequency}
 Cycle Length: ${assessmentData.cycleLength} days
-Irregular Periods: ${assessmentData.irregularPeriods}
 Flow Intensity: ${assessmentData.flowIntensity}
 
 Physical Symptoms Checked: ${assessmentData.symptoms.length > 0 ? assessmentData.symptoms.join(', ') : 'None'}

@@ -40,7 +40,6 @@ const assessmentSchema = z.object({
       'Cycle length must be between 14 and 60 days'),
   lastPeriodDate: z.string().min(1, 'Last period date is required'),
   flowIntensity: z.string().min(1, 'Please select flow intensity'),
-  irregularPeriods: z.string().min(1, 'Please answer this question'),
   
   // Symptoms - Step 3
   symptoms: z.array(z.string()),
@@ -68,7 +67,6 @@ interface AssessmentData {
   periodFrequency: string;
   lastPeriodDate: string;
   flowIntensity: string;
-  irregularPeriods: string;
   symptoms: string[];
   acneSeverity: string;
   hairGrowth: string;
@@ -82,7 +80,7 @@ interface AssessmentData {
 
 // Step-specific validation schemas
 const step1Schema = assessmentSchema.pick({ age: true, height: true, weight: true, ethnicity: true });
-const step2Schema = assessmentSchema.pick({ periodFrequency: true, cycleLength: true, lastPeriodDate: true, flowIntensity: true, irregularPeriods: true });
+const step2Schema = assessmentSchema.pick({ periodFrequency: true, cycleLength: true, lastPeriodDate: true, flowIntensity: true });
 const step3Schema = assessmentSchema.pick({ symptoms: true, acneSeverity: true, hairGrowth: true, hairLoss: true, weightChanges: true, moodSymptoms: true });
 const step4Schema = assessmentSchema.pick({ familyHistory: true, medications: true, additionalNotes: true });
 
@@ -109,7 +107,6 @@ export const PCOSAssessmentForm = ({ onComplete, isEdit = false, guestMode = fal
       periodFrequency: '',
       lastPeriodDate: '',
       flowIntensity: '',
-      irregularPeriods: '',
       symptoms: [],
       acneSeverity: '',
       hairGrowth: '',
@@ -177,7 +174,6 @@ export const PCOSAssessmentForm = ({ onComplete, isEdit = false, guestMode = fal
             cycleLength: values.cycleLength,
             lastPeriodDate: values.lastPeriodDate,
             flowIntensity: values.flowIntensity,
-            irregularPeriods: values.irregularPeriods,
           });
           isValid = true;
           break;
@@ -285,7 +281,6 @@ export const PCOSAssessmentForm = ({ onComplete, isEdit = false, guestMode = fal
         ethnicity: formData.ethnicity,
         periodFrequency: formData.periodFrequency,
         cycleLength: Number(formData.cycleLength),
-        irregularPeriods: formData.irregularPeriods,
         flowIntensity: formData.flowIntensity,
         symptoms: formData.symptoms,
         acneSeverity: formData.acneSeverity,
