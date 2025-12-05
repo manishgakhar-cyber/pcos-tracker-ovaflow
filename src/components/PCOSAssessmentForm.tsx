@@ -23,7 +23,7 @@ const assessmentSchema = z.object({
   age: z.string()
     .min(1, 'Age is required')
     .refine((val) => !isNaN(Number(val)), 'Age must be a valid number')
-    .refine((val) => Number(val) >= 10 && Number(val) <= 100, 'Age must be between 10 and 100'),
+    .refine((val) => Number(val) >= 5 && Number(val) <= 100, 'Age must be between 5 and 100'),
   height: z.string()
     .refine((val) => val === '' || (!isNaN(Number(val)) && Number(val) > 0 && Number(val) <= 96), 
       'Height must be a positive number up to 96 inches'),
