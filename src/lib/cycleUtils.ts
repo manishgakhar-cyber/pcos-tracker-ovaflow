@@ -110,12 +110,22 @@ export function computeCycleInsights(cycles: CycleRecord[], todayInput: Date = n
   const daysUntilNextPeriod = differenceInDays(nextPeriodDate, today);
 
   let nextPeriodLabel: string;
-  if (daysUntilNextPeriod > 0) {
-    nextPeriodLabel = `${daysUntilNextPeriod} days`;
+  if (daysUntilNextPeriod > 1) {
+    // Show ±1 day margin
+    const minDays = Math.max(1, daysUntilNextPeriod - 1);
+    const maxDays = daysUntilNextPeriod + 1;
+    nextPeriodLabel = `${minDays}-${maxDays} days`;
+  } else if (daysUntilNextPeriod === 1) {
+    nextPeriodLabel = '1-2 days';
   } else if (daysUntilNextPeriod === 0) {
-    nextPeriodLabel = 'Today';
+    nextPeriodLabel = 'Today ± 1 day';
+  } else if (daysUntilNextPeriod === -1) {
+    nextPeriodLabel = 'Due now (± 1 day)';
   } else {
-    nextPeriodLabel = `${Math.abs(daysUntilNextPeriod)} days overdue`;
+    // Overdue by more than 1 day
+    const minOverdue = Math.abs(daysUntilNextPeriod) - 1;
+    const maxOverdue = Math.abs(daysUntilNextPeriod) + 1;
+    nextPeriodLabel = `${minOverdue}-${maxOverdue} days overdue`;
   }
 
   return {
