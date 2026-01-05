@@ -434,7 +434,7 @@ export const SymptomTracker = () => {
             </div>
 
             <div>
-              <Label className="text-sm font-medium">Period End Date (Optional)</Label>
+              <Label className="text-sm font-medium">Period End Date</Label>
               <Popover>
                 <PopoverTrigger asChild>
                   <Button
