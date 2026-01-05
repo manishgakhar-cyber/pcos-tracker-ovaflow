@@ -8,6 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useState } from 'react';
 import { z } from 'zod';
+import { supabase } from '@/integrations/supabase/client';
 
 const feedbackSchema = z.object({
   rating: z.number().int().min(1).max(5),
@@ -44,12 +45,39 @@ export const ReferralFeedback = () => {
     }
   };
 
-  const handleSubmitFeedback = () => {
+  const handleSubmitFeedback = async () => {
     try {
       const validatedData = feedbackSchema.parse({
         rating: parseInt(rating),
         feedback: feedback.trim() || undefined,
       });
+
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        toast({
+          title: 'Authentication Required',
+          description: 'Please log in to submit feedback',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      const { error } = await supabase.from('user_feedback').insert({
+        user_id: user.id,
+        rating: validatedData.rating,
+        feedback: validatedData.feedback || null,
+      });
+
+      if (error) {
+        console.error('Error saving feedback:', error);
+        toast({
+          title: 'Error',
+          description: 'Failed to submit feedback. Please try again.',
+          variant: 'destructive',
+        });
+        return;
+      }
       
       toast({
         title: 'Thank You!',
