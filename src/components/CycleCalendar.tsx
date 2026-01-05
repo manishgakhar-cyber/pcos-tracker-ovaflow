@@ -78,50 +78,136 @@ export const CycleCalendar = () => {
   const calendarEnd = endOfWeek(monthEnd);
   const days = eachDayOfInterval({ start: calendarStart, end: calendarEnd });
 
+  // Calculate average cycle length using weighted average
+  const getAvgCycleLength = () => {
+    const completedCycles = cycleData.filter(cycle => cycle.cycle_length && cycle.cycle_length > 0).sort((a, b) => 
+      new Date(b.period_start_date).getTime() - new Date(a.period_start_date).getTime()
+    );
+    
+    if (completedCycles.length === 0) return 28;
+    
+    const weights = [0.4, 0.3, 0.2, 0.1];
+    const cyclesToUse = completedCycles.slice(0, 4);
+    let weightedSum = 0;
+    let totalWeight = 0;
+    cyclesToUse.forEach((cycle, index) => {
+      const weight = weights[index] || 0.1;
+      weightedSum += cycle.cycle_length * weight;
+      totalWeight += weight;
+    });
+    return Math.round(weightedSum / totalWeight);
+  };
+
+  const avgCycleLengthCalc = getAvgCycleLength();
+
   // Calculate predicted period dates based on cycle data
   const getPredictedPeriodDates = () => {
     if (cycleData.length === 0) return [];
     
-    // Get the most recent cycle
     const sortedCycles = [...cycleData].sort((a, b) => 
       new Date(b.period_start_date).getTime() - new Date(a.period_start_date).getTime()
     );
     const lastCycle = sortedCycles[0];
     const lastPeriodStart = new Date(lastCycle.period_start_date);
     
-    // Calculate average cycle length using weighted average
-    const completedCycles = cycleData.filter(cycle => cycle.cycle_length && cycle.cycle_length > 0).sort((a, b) => 
-      new Date(b.period_start_date).getTime() - new Date(a.period_start_date).getTime()
-    );
-    
-    let avgCycleLength = 28; // Default
-    if (completedCycles.length > 0) {
-      const weights = [0.4, 0.3, 0.2, 0.1];
-      const cyclesToUse = completedCycles.slice(0, 4);
-      let weightedSum = 0;
-      let totalWeight = 0;
-      cyclesToUse.forEach((cycle, index) => {
-        const weight = weights[index] || 0.1;
-        weightedSum += cycle.cycle_length * weight;
-        totalWeight += weight;
-      });
-      avgCycleLength = Math.round(weightedSum / totalWeight);
-    }
-    
-    // Generate predicted dates for several months ahead
     const predictions: Date[] = [];
-    let nextPredicted = addDays(lastPeriodStart, avgCycleLength);
+    let nextPredicted = addDays(lastPeriodStart, avgCycleLengthCalc);
     
-    // Generate predictions for the next 6 months
     for (let i = 0; i < 6; i++) {
       predictions.push(nextPredicted);
-      nextPredicted = addDays(nextPredicted, avgCycleLength);
+      nextPredicted = addDays(nextPredicted, avgCycleLengthCalc);
     }
     
     return predictions;
   };
 
+  // Calculate fertility window dates (typically days 10-17, with ovulation around day 14)
+  const getFertilityWindowDates = () => {
+    if (cycleData.length === 0) return [];
+    
+    const sortedCycles = [...cycleData].sort((a, b) => 
+      new Date(b.period_start_date).getTime() - new Date(a.period_start_date).getTime()
+    );
+    const lastCycle = sortedCycles[0];
+    const lastPeriodStart = new Date(lastCycle.period_start_date);
+    
+    // Ovulation typically occurs 14 days before the next period
+    // Fertility window is ~5 days before ovulation and 1 day after
+    const ovulationDay = avgCycleLengthCalc - 14;
+    const fertileStart = ovulationDay - 5;
+    const fertileEnd = ovulationDay + 1;
+    
+    const fertilityDates: Date[] = [];
+    
+    // Generate fertility windows for current and future cycles
+    for (let cycleOffset = 0; cycleOffset < 6; cycleOffset++) {
+      const cycleStart = addDays(lastPeriodStart, cycleOffset * avgCycleLengthCalc);
+      for (let day = fertileStart; day <= fertileEnd; day++) {
+        fertilityDates.push(addDays(cycleStart, day));
+      }
+    }
+    
+    return fertilityDates;
+  };
+
+  // Calculate prediction accuracy based on historical data
+  const calculatePredictionAccuracy = () => {
+    if (cycleData.length < 2) return null;
+    
+    const sortedCycles = [...cycleData].sort((a, b) => 
+      new Date(a.period_start_date).getTime() - new Date(b.period_start_date).getTime()
+    );
+    
+    const accuracyData: { predicted: Date; actual: Date; difference: number }[] = [];
+    
+    // For each cycle (except the first), calculate what the prediction would have been
+    for (let i = 1; i < sortedCycles.length; i++) {
+      const previousCycle = sortedCycles[i - 1];
+      const currentCycle = sortedCycles[i];
+      
+      // Use the cycle lengths available up to that point to predict
+      const previousCycles = sortedCycles.slice(0, i);
+      const cyclesWithLength = previousCycles.filter(c => c.cycle_length && c.cycle_length > 0);
+      
+      let predictedLength = 28;
+      if (cyclesWithLength.length > 0) {
+        const recentCycles = [...cyclesWithLength].reverse().slice(0, 4);
+        const weights = [0.4, 0.3, 0.2, 0.1];
+        let weightedSum = 0;
+        let totalWeight = 0;
+        recentCycles.forEach((cycle, index) => {
+          const weight = weights[index] || 0.1;
+          weightedSum += cycle.cycle_length * weight;
+          totalWeight += weight;
+        });
+        predictedLength = Math.round(weightedSum / totalWeight);
+      }
+      
+      const predictedDate = addDays(new Date(previousCycle.period_start_date), predictedLength);
+      const actualDate = new Date(currentCycle.period_start_date);
+      const difference = Math.abs(Math.round((predictedDate.getTime() - actualDate.getTime()) / (1000 * 60 * 60 * 24)));
+      
+      accuracyData.push({ predicted: predictedDate, actual: actualDate, difference });
+    }
+    
+    if (accuracyData.length === 0) return null;
+    
+    const avgDifference = accuracyData.reduce((sum, d) => sum + d.difference, 0) / accuracyData.length;
+    const withinOneDay = accuracyData.filter(d => d.difference <= 1).length;
+    const withinThreeDays = accuracyData.filter(d => d.difference <= 3).length;
+    
+    return {
+      totalPredictions: accuracyData.length,
+      avgDifference: Math.round(avgDifference * 10) / 10,
+      withinOneDay,
+      withinThreeDays,
+      accuracyPercent: Math.round((withinThreeDays / accuracyData.length) * 100),
+    };
+  };
+
   const predictedDates = getPredictedPeriodDates();
+  const fertilityDates = getFertilityWindowDates();
+  const predictionAccuracy = calculatePredictionAccuracy();
 
   const getDayType = (day: Date) => {
     const dayStr = format(day, 'yyyy-MM-dd');
@@ -140,6 +226,12 @@ export const CycleCalendar = () => {
     const isPredicted = predictedDates.some(predDate => isSameDay(day, predDate));
     if (isPredicted) {
       return 'predicted';
+    }
+    
+    // Check if it's in the fertility window
+    const isFertile = fertilityDates.some(fertDate => isSameDay(day, fertDate));
+    if (isFertile) {
+      return 'fertile';
     }
     
     // Then check if there are symptoms logged
@@ -165,6 +257,8 @@ export const CycleCalendar = () => {
         return `${baseStyles} bg-red-500 text-white hover:bg-red-600`;
       case 'predicted':
         return `${baseStyles} bg-amber-100 text-amber-800 hover:bg-amber-200 border-2 border-dashed border-amber-400`;
+      case 'fertile':
+        return `${baseStyles} bg-teal-100 text-teal-800 hover:bg-teal-200 border-2 border-teal-400`;
       case 'symptoms':
         return `${baseStyles} bg-purple-100 text-purple-800 hover:bg-purple-200 border-2 border-purple-300`;
       default:
@@ -402,6 +496,10 @@ export const CycleCalendar = () => {
                 <span className="text-sm">Predicted Period</span>
               </div>
               <div className="flex items-center space-x-3">
+                <div className="w-4 h-4 bg-teal-100 border-2 border-teal-400 rounded-full"></div>
+                <span className="text-sm">Fertility Window</span>
+              </div>
+              <div className="flex items-center space-x-3">
                 <div className="w-4 h-4 bg-purple-300 border-2 border-purple-400 rounded-full"></div>
                 <span className="text-sm">Symptoms Logged</span>
               </div>
@@ -431,11 +529,13 @@ export const CycleCalendar = () => {
                         <Badge variant="outline" className={
                           info.dayType === 'period' ? 'bg-red-100 text-red-800' :
                           info.dayType === 'predicted' ? 'bg-amber-100 text-amber-800' :
+                          info.dayType === 'fertile' ? 'bg-teal-100 text-teal-800' :
                           info.dayType === 'symptoms' ? 'bg-purple-100 text-purple-800' :
                           'bg-gray-100 text-gray-800'
                         }>
                           {info.dayType === 'period' ? 'Period' :
                            info.dayType === 'predicted' ? 'Predicted Period Start' :
+                           info.dayType === 'fertile' ? 'Fertility Window' :
                            info.dayType === 'symptoms' ? 'Symptoms Logged' :
                            'Normal Day'}
                         </Badge>
@@ -493,6 +593,33 @@ export const CycleCalendar = () => {
                     </div>
                   );
                 })()}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Prediction Accuracy */}
+          {predictionAccuracy && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Prediction Accuracy</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-gray-600">Overall Accuracy</span>
+                  <Badge className={
+                    predictionAccuracy.accuracyPercent >= 80 ? 'bg-green-100 text-green-800' :
+                    predictionAccuracy.accuracyPercent >= 60 ? 'bg-amber-100 text-amber-800' :
+                    'bg-red-100 text-red-800'
+                  }>
+                    {predictionAccuracy.accuracyPercent}%
+                  </Badge>
+                </div>
+                <div className="text-xs text-gray-500 space-y-1">
+                  <p>Based on {predictionAccuracy.totalPredictions} prediction{predictionAccuracy.totalPredictions !== 1 ? 's' : ''}</p>
+                  <p>Avg difference: ±{predictionAccuracy.avgDifference} day{predictionAccuracy.avgDifference !== 1 ? 's' : ''}</p>
+                  <p>Within ±1 day: {predictionAccuracy.withinOneDay}/{predictionAccuracy.totalPredictions}</p>
+                  <p>Within ±3 days: {predictionAccuracy.withinThreeDays}/{predictionAccuracy.totalPredictions}</p>
+                </div>
               </CardContent>
             </Card>
           )}
