@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Calendar, ChevronLeft, ChevronRight, Trash2, Edit } from 'lucide-react';
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, startOfWeek, endOfWeek, getDay } from 'date-fns';
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, startOfWeek, endOfWeek, getDay, addDays } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
 import {
   Dialog,
@@ -78,6 +78,51 @@ export const CycleCalendar = () => {
   const calendarEnd = endOfWeek(monthEnd);
   const days = eachDayOfInterval({ start: calendarStart, end: calendarEnd });
 
+  // Calculate predicted period dates based on cycle data
+  const getPredictedPeriodDates = () => {
+    if (cycleData.length === 0) return [];
+    
+    // Get the most recent cycle
+    const sortedCycles = [...cycleData].sort((a, b) => 
+      new Date(b.period_start_date).getTime() - new Date(a.period_start_date).getTime()
+    );
+    const lastCycle = sortedCycles[0];
+    const lastPeriodStart = new Date(lastCycle.period_start_date);
+    
+    // Calculate average cycle length using weighted average
+    const completedCycles = cycleData.filter(cycle => cycle.cycle_length && cycle.cycle_length > 0).sort((a, b) => 
+      new Date(b.period_start_date).getTime() - new Date(a.period_start_date).getTime()
+    );
+    
+    let avgCycleLength = 28; // Default
+    if (completedCycles.length > 0) {
+      const weights = [0.4, 0.3, 0.2, 0.1];
+      const cyclesToUse = completedCycles.slice(0, 4);
+      let weightedSum = 0;
+      let totalWeight = 0;
+      cyclesToUse.forEach((cycle, index) => {
+        const weight = weights[index] || 0.1;
+        weightedSum += cycle.cycle_length * weight;
+        totalWeight += weight;
+      });
+      avgCycleLength = Math.round(weightedSum / totalWeight);
+    }
+    
+    // Generate predicted dates for several months ahead
+    const predictions: Date[] = [];
+    let nextPredicted = addDays(lastPeriodStart, avgCycleLength);
+    
+    // Generate predictions for the next 6 months
+    for (let i = 0; i < 6; i++) {
+      predictions.push(nextPredicted);
+      nextPredicted = addDays(nextPredicted, avgCycleLength);
+    }
+    
+    return predictions;
+  };
+
+  const predictedDates = getPredictedPeriodDates();
+
   const getDayType = (day: Date) => {
     const dayStr = format(day, 'yyyy-MM-dd');
     
@@ -89,6 +134,12 @@ export const CycleCalendar = () => {
     });
     if (isPeriodDay) {
       return 'period';
+    }
+    
+    // Check if it's a predicted period start date
+    const isPredicted = predictedDates.some(predDate => isSameDay(day, predDate));
+    if (isPredicted) {
+      return 'predicted';
     }
     
     // Then check if there are symptoms logged
@@ -112,6 +163,8 @@ export const CycleCalendar = () => {
     switch (type) {
       case 'period':
         return `${baseStyles} bg-red-500 text-white hover:bg-red-600`;
+      case 'predicted':
+        return `${baseStyles} bg-amber-100 text-amber-800 hover:bg-amber-200 border-2 border-dashed border-amber-400`;
       case 'symptoms':
         return `${baseStyles} bg-purple-100 text-purple-800 hover:bg-purple-200 border-2 border-purple-300`;
       default:
@@ -345,6 +398,10 @@ export const CycleCalendar = () => {
                 <span className="text-sm">Period</span>
               </div>
               <div className="flex items-center space-x-3">
+                <div className="w-4 h-4 bg-amber-100 border-2 border-dashed border-amber-400 rounded-full"></div>
+                <span className="text-sm">Predicted Period</span>
+              </div>
+              <div className="flex items-center space-x-3">
                 <div className="w-4 h-4 bg-purple-300 border-2 border-purple-400 rounded-full"></div>
                 <span className="text-sm">Symptoms Logged</span>
               </div>
@@ -373,10 +430,12 @@ export const CycleCalendar = () => {
                         <span className="text-sm font-medium">Status: </span>
                         <Badge variant="outline" className={
                           info.dayType === 'period' ? 'bg-red-100 text-red-800' :
+                          info.dayType === 'predicted' ? 'bg-amber-100 text-amber-800' :
                           info.dayType === 'symptoms' ? 'bg-purple-100 text-purple-800' :
                           'bg-gray-100 text-gray-800'
                         }>
                           {info.dayType === 'period' ? 'Period' :
+                           info.dayType === 'predicted' ? 'Predicted Period Start' :
                            info.dayType === 'symptoms' ? 'Symptoms Logged' :
                            'Normal Day'}
                         </Badge>
