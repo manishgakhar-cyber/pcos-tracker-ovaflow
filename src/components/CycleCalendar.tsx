@@ -121,9 +121,9 @@ export const CycleCalendar = () => {
     return predictions;
   };
 
-  // Calculate fertility window dates (typically days 10-17, with ovulation around day 14)
-  const getFertilityWindowDates = () => {
-    if (cycleData.length === 0) return [];
+  // Calculate fertility window dates and ovulation day
+  const getFertilityAndOvulationDates = () => {
+    if (cycleData.length === 0) return { fertilityDates: [], ovulationDates: [] };
     
     const sortedCycles = [...cycleData].sort((a, b) => 
       new Date(b.period_start_date).getTime() - new Date(a.period_start_date).getTime()
@@ -132,82 +132,75 @@ export const CycleCalendar = () => {
     const lastPeriodStart = new Date(lastCycle.period_start_date);
     
     // Ovulation typically occurs 14 days before the next period
-    // Fertility window is ~5 days before ovulation and 1 day after
     const ovulationDay = avgCycleLengthCalc - 14;
     const fertileStart = ovulationDay - 5;
     const fertileEnd = ovulationDay + 1;
     
     const fertilityDates: Date[] = [];
+    const ovulationDates: Date[] = [];
     
     // Generate fertility windows for current and future cycles
     for (let cycleOffset = 0; cycleOffset < 6; cycleOffset++) {
       const cycleStart = addDays(lastPeriodStart, cycleOffset * avgCycleLengthCalc);
+      ovulationDates.push(addDays(cycleStart, ovulationDay));
       for (let day = fertileStart; day <= fertileEnd; day++) {
-        fertilityDates.push(addDays(cycleStart, day));
+        if (day !== ovulationDay) { // Exclude ovulation day from regular fertility
+          fertilityDates.push(addDays(cycleStart, day));
+        }
       }
     }
     
-    return fertilityDates;
+    return { fertilityDates, ovulationDates };
   };
 
-  // Calculate prediction accuracy based on historical data
-  const calculatePredictionAccuracy = () => {
-    if (cycleData.length < 2) return null;
+  // Get cycle phase for a specific day
+  const getCyclePhase = (day: Date): { phase: string; description: string } | null => {
+    if (cycleData.length === 0) return null;
     
     const sortedCycles = [...cycleData].sort((a, b) => 
-      new Date(a.period_start_date).getTime() - new Date(b.period_start_date).getTime()
+      new Date(b.period_start_date).getTime() - new Date(a.period_start_date).getTime()
     );
     
-    const accuracyData: { predicted: Date; actual: Date; difference: number }[] = [];
-    
-    // For each cycle (except the first), calculate what the prediction would have been
-    for (let i = 1; i < sortedCycles.length; i++) {
-      const previousCycle = sortedCycles[i - 1];
-      const currentCycle = sortedCycles[i];
-      
-      // Use the cycle lengths available up to that point to predict
-      const previousCycles = sortedCycles.slice(0, i);
-      const cyclesWithLength = previousCycles.filter(c => c.cycle_length && c.cycle_length > 0);
-      
-      let predictedLength = 28;
-      if (cyclesWithLength.length > 0) {
-        const recentCycles = [...cyclesWithLength].reverse().slice(0, 4);
-        const weights = [0.4, 0.3, 0.2, 0.1];
-        let weightedSum = 0;
-        let totalWeight = 0;
-        recentCycles.forEach((cycle, index) => {
-          const weight = weights[index] || 0.1;
-          weightedSum += cycle.cycle_length * weight;
-          totalWeight += weight;
-        });
-        predictedLength = Math.round(weightedSum / totalWeight);
+    // Find the most recent period start that's before or on this day
+    let relevantCycleStart: Date | null = null;
+    for (const cycle of sortedCycles) {
+      const startDate = new Date(cycle.period_start_date);
+      if (startDate <= day) {
+        relevantCycleStart = startDate;
+        break;
       }
-      
-      const predictedDate = addDays(new Date(previousCycle.period_start_date), predictedLength);
-      const actualDate = new Date(currentCycle.period_start_date);
-      const difference = Math.abs(Math.round((predictedDate.getTime() - actualDate.getTime()) / (1000 * 60 * 60 * 24)));
-      
-      accuracyData.push({ predicted: predictedDate, actual: actualDate, difference });
     }
     
-    if (accuracyData.length === 0) return null;
+    // If day is before any cycle, use first cycle and project backwards
+    if (!relevantCycleStart) {
+      const oldestCycle = sortedCycles[sortedCycles.length - 1];
+      relevantCycleStart = new Date(oldestCycle.period_start_date);
+      // Calculate which cycle this day would be in
+      const daysDiff = Math.floor((relevantCycleStart.getTime() - day.getTime()) / (1000 * 60 * 60 * 24));
+      const cyclesBack = Math.ceil(daysDiff / avgCycleLengthCalc);
+      relevantCycleStart = addDays(relevantCycleStart, -cyclesBack * avgCycleLengthCalc);
+    }
     
-    const avgDifference = accuracyData.reduce((sum, d) => sum + d.difference, 0) / accuracyData.length;
-    const withinOneDay = accuracyData.filter(d => d.difference <= 1).length;
-    const withinThreeDays = accuracyData.filter(d => d.difference <= 3).length;
+    const dayOfCycle = Math.floor((day.getTime() - relevantCycleStart.getTime()) / (1000 * 60 * 60 * 24)) + 1;
     
-    return {
-      totalPredictions: accuracyData.length,
-      avgDifference: Math.round(avgDifference * 10) / 10,
-      withinOneDay,
-      withinThreeDays,
-      accuracyPercent: Math.round((withinThreeDays / accuracyData.length) * 100),
-    };
+    // Handle future cycles
+    const adjustedDay = ((dayOfCycle - 1) % avgCycleLengthCalc) + 1;
+    
+    const ovulationDay = avgCycleLengthCalc - 14;
+    
+    if (adjustedDay <= 5) {
+      return { phase: 'Menstrual', description: 'Period phase' };
+    } else if (adjustedDay < ovulationDay - 2) {
+      return { phase: 'Follicular', description: 'Pre-ovulation' };
+    } else if (adjustedDay >= ovulationDay - 2 && adjustedDay <= ovulationDay + 1) {
+      return { phase: 'Ovulation', description: 'Peak fertility' };
+    } else {
+      return { phase: 'Luteal', description: 'Post-ovulation' };
+    }
   };
 
   const predictedDates = getPredictedPeriodDates();
-  const fertilityDates = getFertilityWindowDates();
-  const predictionAccuracy = calculatePredictionAccuracy();
+  const { fertilityDates, ovulationDates } = getFertilityAndOvulationDates();
 
   const getDayType = (day: Date) => {
     const dayStr = format(day, 'yyyy-MM-dd');
@@ -226,6 +219,12 @@ export const CycleCalendar = () => {
     const isPredicted = predictedDates.some(predDate => isSameDay(day, predDate));
     if (isPredicted) {
       return 'predicted';
+    }
+    
+    // Check if it's ovulation day (peak fertility)
+    const isOvulation = ovulationDates.some(ovDate => isSameDay(day, ovDate));
+    if (isOvulation) {
+      return 'ovulation';
     }
     
     // Check if it's in the fertility window
@@ -257,6 +256,8 @@ export const CycleCalendar = () => {
         return `${baseStyles} bg-red-500 text-white hover:bg-red-600`;
       case 'predicted':
         return `${baseStyles} bg-amber-100 text-amber-800 hover:bg-amber-200 border-2 border-dashed border-amber-400`;
+      case 'ovulation':
+        return `${baseStyles} bg-pink-200 text-pink-900 hover:bg-pink-300 border-2 border-pink-500 ring-2 ring-pink-300`;
       case 'fertile':
         return `${baseStyles} bg-teal-100 text-teal-800 hover:bg-teal-200 border-2 border-teal-400`;
       case 'symptoms':
@@ -496,6 +497,10 @@ export const CycleCalendar = () => {
                 <span className="text-sm">Predicted Period</span>
               </div>
               <div className="flex items-center space-x-3">
+                <div className="w-4 h-4 bg-pink-200 border-2 border-pink-500 rounded-full ring-2 ring-pink-300"></div>
+                <span className="text-sm">Ovulation Day</span>
+              </div>
+              <div className="flex items-center space-x-3">
                 <div className="w-4 h-4 bg-teal-100 border-2 border-teal-400 rounded-full"></div>
                 <span className="text-sm">Fertility Window</span>
               </div>
@@ -529,17 +534,39 @@ export const CycleCalendar = () => {
                         <Badge variant="outline" className={
                           info.dayType === 'period' ? 'bg-red-100 text-red-800' :
                           info.dayType === 'predicted' ? 'bg-amber-100 text-amber-800' :
+                          info.dayType === 'ovulation' ? 'bg-pink-200 text-pink-900' :
                           info.dayType === 'fertile' ? 'bg-teal-100 text-teal-800' :
                           info.dayType === 'symptoms' ? 'bg-purple-100 text-purple-800' :
                           'bg-gray-100 text-gray-800'
                         }>
                           {info.dayType === 'period' ? 'Period' :
                            info.dayType === 'predicted' ? 'Predicted Period Start' :
+                           info.dayType === 'ovulation' ? 'Ovulation Day (Peak Fertility)' :
                            info.dayType === 'fertile' ? 'Fertility Window' :
                            info.dayType === 'symptoms' ? 'Symptoms Logged' :
                            'Normal Day'}
                         </Badge>
                       </div>
+
+                      {/* Cycle Phase */}
+                      {(() => {
+                        const phase = getCyclePhase(selectedDate);
+                        if (!phase) return null;
+                        return (
+                          <div>
+                            <span className="text-sm font-medium">Cycle Phase: </span>
+                            <Badge variant="outline" className={
+                              phase.phase === 'Menstrual' ? 'bg-red-50 text-red-700' :
+                              phase.phase === 'Follicular' ? 'bg-blue-50 text-blue-700' :
+                              phase.phase === 'Ovulation' ? 'bg-pink-50 text-pink-700' :
+                              'bg-orange-50 text-orange-700'
+                            }>
+                              {phase.phase}
+                            </Badge>
+                            <p className="text-xs text-gray-500 mt-1">{phase.description}</p>
+                          </div>
+                        );
+                      })()}
                       
                       {info.symptoms.length > 0 && (
                         <div>
@@ -597,32 +624,6 @@ export const CycleCalendar = () => {
             </Card>
           )}
 
-          {/* Prediction Accuracy */}
-          {predictionAccuracy && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Prediction Accuracy</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">Overall Accuracy</span>
-                  <Badge className={
-                    predictionAccuracy.accuracyPercent >= 80 ? 'bg-green-100 text-green-800' :
-                    predictionAccuracy.accuracyPercent >= 60 ? 'bg-amber-100 text-amber-800' :
-                    'bg-red-100 text-red-800'
-                  }>
-                    {predictionAccuracy.accuracyPercent}%
-                  </Badge>
-                </div>
-                <div className="text-xs text-gray-500 space-y-1">
-                  <p>Based on {predictionAccuracy.totalPredictions} prediction{predictionAccuracy.totalPredictions !== 1 ? 's' : ''}</p>
-                  <p>Avg difference: ±{predictionAccuracy.avgDifference} day{predictionAccuracy.avgDifference !== 1 ? 's' : ''}</p>
-                  <p>Within ±1 day: {predictionAccuracy.withinOneDay}/{predictionAccuracy.totalPredictions}</p>
-                  <p>Within ±3 days: {predictionAccuracy.withinThreeDays}/{predictionAccuracy.totalPredictions}</p>
-                </div>
-              </CardContent>
-            </Card>
-          )}
 
           {/* Quick Stats */}
           {hasAnyData && (
