@@ -195,10 +195,24 @@ export const Dashboard = ({ onEditAssessment }: { onEditAssessment?: () => void 
           <CardContent>
             {cycleDay !== null ? (
               <>
-                <div className="text-2xl font-bold text-pink-900">
-                  Day {cycleDay}
-                </div>
-                <p className="text-sm text-pink-600">{cycleLength ? `of ${cycleLength}-day cycle` : 'Estimating cycle length'}</p>
+                {cycleLength && cycleDay > cycleLength + 3 ? (
+                  <>
+                    <div className="text-lg font-bold text-pink-900 flex items-center gap-1">
+                      <AlertTriangle className="w-5 h-5 text-amber-500" />
+                      Period may be late
+                    </div>
+                    <p className="text-sm text-pink-600 mt-1">
+                      Have you recorded your last period? You may be {cycleDay - cycleLength} days late.
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <div className="text-2xl font-bold text-pink-900">
+                      Day {cycleDay}
+                    </div>
+                    <p className="text-sm text-pink-600">{cycleLength ? `of ${cycleLength}-day cycle` : 'Estimating cycle length'}</p>
+                  </>
+                )}
               </>
             ) : (
               <div className="text-sm text-pink-600">No cycle data yet</div>
