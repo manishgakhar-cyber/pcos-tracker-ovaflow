@@ -121,7 +121,7 @@ export const CycleCalendar = () => {
     return predictions;
   };
 
-  // Calculate fertility window dates and ovulation day
+  // Calculate fertility window dates and ovulation day for ALL cycles (past, current, future)
   const getFertilityAndOvulationDates = () => {
     if (cycleData.length === 0) return { fertilityDates: [], ovulationDates: [] };
     
@@ -139,12 +139,23 @@ export const CycleCalendar = () => {
     const fertilityDates: Date[] = [];
     const ovulationDates: Date[] = [];
     
-    // Generate fertility windows for current and future cycles
-    for (let cycleOffset = 0; cycleOffset < 6; cycleOffset++) {
+    // Generate fertility/ovulation for each PAST logged cycle
+    for (const cycle of sortedCycles) {
+      const cycleStart = new Date(cycle.period_start_date);
+      ovulationDates.push(addDays(cycleStart, ovulationDay));
+      for (let day = fertileStart; day <= fertileEnd; day++) {
+        if (day !== ovulationDay) {
+          fertilityDates.push(addDays(cycleStart, day));
+        }
+      }
+    }
+    
+    // Generate fertility windows for future predicted cycles
+    for (let cycleOffset = 1; cycleOffset <= 6; cycleOffset++) {
       const cycleStart = addDays(lastPeriodStart, cycleOffset * avgCycleLengthCalc);
       ovulationDates.push(addDays(cycleStart, ovulationDay));
       for (let day = fertileStart; day <= fertileEnd; day++) {
-        if (day !== ovulationDay) { // Exclude ovulation day from regular fertility
+        if (day !== ovulationDay) {
           fertilityDates.push(addDays(cycleStart, day));
         }
       }
