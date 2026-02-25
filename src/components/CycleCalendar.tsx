@@ -217,10 +217,11 @@ export const CycleCalendar = () => {
     const dayStr = format(day, 'yyyy-MM-dd');
     
     // Check if it's a period day first (takes priority)
+    // Use string comparison to avoid timezone issues with date-only strings
     const isPeriodDay = cycleData.some(cycle => {
-      const startDate = new Date(cycle.period_start_date);
-      const endDate = cycle.period_end_date ? new Date(cycle.period_end_date) : startDate;
-      return day >= startDate && day <= endDate;
+      const startStr = cycle.period_start_date;
+      const endStr = cycle.period_end_date || startStr;
+      return dayStr >= startStr && dayStr <= endStr;
     });
     if (isPeriodDay) {
       return 'period';
@@ -286,9 +287,9 @@ export const CycleCalendar = () => {
     const dayStr = format(selectedDate, 'yyyy-MM-dd');
     const symptomLog = symptomLogs.find(log => log.log_date === dayStr);
     const periodCycle = cycleData.find(cycle => {
-      const startDate = new Date(cycle.period_start_date);
-      const endDate = cycle.period_end_date ? new Date(cycle.period_end_date) : startDate;
-      return selectedDate >= startDate && selectedDate <= endDate;
+      const startStr = cycle.period_start_date;
+      const endStr = cycle.period_end_date || startStr;
+      return dayStr >= startStr && dayStr <= endStr;
     });
     
     return { dayType, symptoms, symptomLog, periodCycle };
@@ -392,10 +393,11 @@ export const CycleCalendar = () => {
   // Count period days in the month
   const monthPeriodDays = days.filter(day => {
     if (!isSameMonth(day, currentMonth)) return false;
+    const dayStr = format(day, 'yyyy-MM-dd');
     return cycleData.some(cycle => {
-      const startDate = new Date(cycle.period_start_date);
-      const endDate = cycle.period_end_date ? new Date(cycle.period_end_date) : startDate;
-      return day >= startDate && day <= endDate;
+      const startStr = cycle.period_start_date;
+      const endStr = cycle.period_end_date || startStr;
+      return dayStr >= startStr && dayStr <= endStr;
     });
   }).length;
   
