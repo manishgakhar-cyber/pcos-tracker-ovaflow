@@ -1,0 +1,10 @@
+{
+	"appId": "com.ovaflow.health",
+	"appName": "OvaFlow",
+	"webDir": "www",
+	"server": {
+		"url": "https://pcos-tracker-ovaflow.lovable.app",
+		"cleartext": true
+	},
+	"packageClassList": []
+}
