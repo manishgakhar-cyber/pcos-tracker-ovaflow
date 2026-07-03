@@ -164,6 +164,21 @@ export const Education = () => {
 
   return (
     <div className="max-w-6xl mx-auto space-y-6">
+      <Helmet>
+        <script type="application/ld+json">
+          {JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "FAQPage",
+            "mainEntity": Object.values(educationContent).flatMap((section) =>
+              section.content.map((item) => ({
+                "@type": "Question",
+                "name": item.question,
+                "acceptedAnswer": { "@type": "Answer", "text": item.answer }
+              }))
+            )
+          })}
+        </script>
+      </Helmet>
       <div className="text-center space-y-2">
         <h2 className="text-3xl font-bold text-gray-900">Learn About PCOS</h2>
         <p className="text-gray-600">Evidence-based information to help you understand and manage PCOS</p>
