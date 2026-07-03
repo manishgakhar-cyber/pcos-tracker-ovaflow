@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { z } from 'zod';
+import { Helmet } from 'react-helmet-async';
 
 const emailSchema = z.string().email('Invalid email address');
 const passwordSchema = z.string().min(6, 'Password must be at least 6 characters');
@@ -240,7 +241,14 @@ const Auth = () => {
   if (isResetting) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-pink-50 to-purple-50 flex items-center justify-center p-4">
-        <Card className="w-full max-w-md">
+        <Helmet>
+          <title>Reset Password — CycleWise</title>
+          <meta name="description" content="Set a new password for your CycleWise account." />
+          <link rel="canonical" href="/auth" />
+        </Helmet>
+        <main className="w-full max-w-md">
+        <h1 className="sr-only">Reset your CycleWise password</h1>
+        <Card>
           <CardHeader className="text-center">
             <CardTitle className="text-3xl font-bold text-purple-800">Reset Password</CardTitle>
             <CardDescription>Enter your new password</CardDescription>
@@ -268,13 +276,23 @@ const Auth = () => {
             </form>
           </CardContent>
         </Card>
+        </main>
       </div>
     );
   }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-50 to-purple-50 flex items-center justify-center p-4">
-      <Card className="w-full max-w-md">
+      <Helmet>
+        <title>Sign in — CycleWise</title>
+        <meta name="description" content="Sign in or create a CycleWise account to save your PCOS assessment, log cycles, and get personalized predictions." />
+        <link rel="canonical" href="/auth" />
+        <meta property="og:title" content="Sign in — CycleWise" />
+        <meta property="og:url" content="/auth" />
+      </Helmet>
+      <main className="w-full max-w-md">
+      <h1 className="sr-only">Sign in to CycleWise</h1>
+      <Card>
         <CardHeader className="text-center">
           <CardTitle className="text-3xl font-bold text-purple-800">CycleWise</CardTitle>
           <CardDescription>Your comprehensive PCOS and cycle tracking companion</CardDescription>
@@ -412,6 +430,7 @@ const Auth = () => {
           </Tabs>
         </CardContent>
       </Card>
+      </main>
     </div>
   );
 };

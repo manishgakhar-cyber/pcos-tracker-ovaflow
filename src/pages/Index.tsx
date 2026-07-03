@@ -139,7 +139,14 @@ const Index = () => {
   if (hasCompletedAssessment === false || showAssessmentForm) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-pink-50 to-purple-50">
-        <div className="container mx-auto px-4 py-6">
+        <Helmet>
+          <title>PCOS Assessment — CycleWise</title>
+          <meta name="description" content="Complete your PCOS risk assessment to unlock personalized cycle tracking and insights on CycleWise." />
+          <link rel="canonical" href="/dashboard" />
+          <meta property="og:title" content="PCOS Assessment — CycleWise" />
+          <meta property="og:url" content="/dashboard" />
+        </Helmet>
+        <main className="container mx-auto px-4 py-6">
           <div className="text-center mb-8">
             <div className="flex justify-between items-center mb-2">
               <div className="flex-1">
@@ -173,7 +180,7 @@ const Index = () => {
             onComplete={handleAssessmentComplete}
             isEdit={showAssessmentForm && hasCompletedAssessment === true}
           />
-        </div>
+        </main>
       </div>
     );
   }
@@ -181,9 +188,16 @@ const Index = () => {
   // Show main app with tabs (without assessment tab)
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-50 to-purple-50">
+      <Helmet>
+        <title>Dashboard — CycleWise</title>
+        <meta name="description" content="Your CycleWise dashboard: track cycles, log symptoms, view predictions, and learn about PCOS." />
+        <link rel="canonical" href="/dashboard" />
+        <meta property="og:title" content="Dashboard — CycleWise" />
+        <meta property="og:url" content="/dashboard" />
+      </Helmet>
       <Tutorial open={showTutorial} onClose={handleCloseTutorial} />
       
-      <div className="container mx-auto px-4 py-6">
+      <main className="container mx-auto px-4 py-6">
         <div className="text-center mb-8">
           <div className="flex justify-between items-center mb-2">
             <div className="flex-1" />
@@ -224,7 +238,7 @@ const Index = () => {
             <Education />
           </TabsContent>
         </Tabs>
-      </div>
+      </main>
     </div>
   );
 };
