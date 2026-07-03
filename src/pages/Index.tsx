@@ -10,6 +10,7 @@ import { CycleCalendar } from '@/components/CycleCalendar';
 import { Education } from '@/components/Education';
 import { Tutorial } from '@/components/Tutorial';
 import type { User } from '@supabase/supabase-js';
+import { Helmet } from 'react-helmet-async';
 
 const TUTORIAL_KEY = 'cyclewise_tutorial_completed';
 
@@ -138,7 +139,14 @@ const Index = () => {
   if (hasCompletedAssessment === false || showAssessmentForm) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-pink-50 to-purple-50">
-        <div className="container mx-auto px-4 py-6">
+        <Helmet>
+          <title>PCOS Assessment — CycleWise</title>
+          <meta name="description" content="Complete your PCOS risk assessment to unlock personalized cycle tracking and insights on CycleWise." />
+          <link rel="canonical" href="/dashboard" />
+          <meta property="og:title" content="PCOS Assessment — CycleWise" />
+          <meta property="og:url" content="/dashboard" />
+        </Helmet>
+        <main className="container mx-auto px-4 py-6">
           <div className="text-center mb-8">
             <div className="flex justify-between items-center mb-2">
               <div className="flex-1">
@@ -151,7 +159,7 @@ const Index = () => {
                   </Button>
                 )}
               </div>
-              <h1 className="text-4xl font-bold text-purple-800 flex-1">CycleWise</h1>
+              <h1 className="text-4xl font-bold text-purple-800 flex-1">CycleWise — Your PCOS Dashboard</h1>
               <div className="flex-1 flex justify-end">
                 <Button variant="outline" onClick={handleLogout}>
                   Logout
@@ -172,7 +180,7 @@ const Index = () => {
             onComplete={handleAssessmentComplete}
             isEdit={showAssessmentForm && hasCompletedAssessment === true}
           />
-        </div>
+        </main>
       </div>
     );
   }
@@ -180,13 +188,20 @@ const Index = () => {
   // Show main app with tabs (without assessment tab)
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-50 to-purple-50">
+      <Helmet>
+        <title>Dashboard — CycleWise</title>
+        <meta name="description" content="Your CycleWise dashboard: track cycles, log symptoms, view predictions, and learn about PCOS." />
+        <link rel="canonical" href="/dashboard" />
+        <meta property="og:title" content="Dashboard — CycleWise" />
+        <meta property="og:url" content="/dashboard" />
+      </Helmet>
       <Tutorial open={showTutorial} onClose={handleCloseTutorial} />
       
-      <div className="container mx-auto px-4 py-6">
+      <main className="container mx-auto px-4 py-6">
         <div className="text-center mb-8">
           <div className="flex justify-between items-center mb-2">
             <div className="flex-1" />
-            <h1 className="text-4xl font-bold text-purple-800 flex-1">CycleWise</h1>
+            <h1 className="text-4xl font-bold text-purple-800 flex-1">CycleWise — Your PCOS Dashboard</h1>
             <div className="flex-1 flex justify-end">
               <Button variant="outline" onClick={handleLogout}>
                 Logout
@@ -223,7 +238,7 @@ const Index = () => {
             <Education />
           </TabsContent>
         </Tabs>
-      </div>
+      </main>
     </div>
   );
 };

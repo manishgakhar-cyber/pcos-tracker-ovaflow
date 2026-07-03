@@ -1,0 +1,10 @@
+# CycleWise
+
+> PCOS and cycle tracking companion — take a PCOS risk assessment, log periods and symptoms, and get personalized predictions and education.
+
+CycleWise helps women understand their menstrual cycle and PCOS risk. The homepage offers an assessment anyone can take; the rest of the app (dashboard, tracker, calendar, education) is available after sign-in.
+
+## Pages
+
+- [Home / PCOS assessment](/): Take a free PCOS risk assessment and learn about the app.
+- [Sign in / Sign up](/auth): Create an account or sign in to save assessments, log cycles, and view predictions.
