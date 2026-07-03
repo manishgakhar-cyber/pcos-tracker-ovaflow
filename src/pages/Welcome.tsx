@@ -5,6 +5,7 @@ import { PCOSAssessmentForm } from '@/components/PCOSAssessmentForm';
 import { PCOSResults } from '@/components/PCOSResults';
 import { Button } from '@/components/ui/button';
 import { Heart } from 'lucide-react';
+import { Helmet } from 'react-helmet-async';
 
 const Welcome = () => {
   const navigate = useNavigate();
@@ -59,11 +60,19 @@ const Welcome = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-50 to-purple-50">
-      <div className="container mx-auto px-4 py-6">
+      <Helmet>
+        <title>CycleWise — PCOS and Cycle Tracking Companion</title>
+        <meta name="description" content="Take a free PCOS risk assessment and start tracking your cycle, symptoms, and hormonal health with CycleWise." />
+        <link rel="canonical" href="/" />
+        <meta property="og:title" content="CycleWise — PCOS and Cycle Tracking Companion" />
+        <meta property="og:description" content="Take a free PCOS risk assessment and start tracking your cycle." />
+        <meta property="og:url" content="/" />
+      </Helmet>
+      <main className="container mx-auto px-4 py-6">
         <div className="text-center mb-8">
           <div className="flex items-center justify-center mb-4">
             <Heart className="w-12 h-12 text-pink-500 mr-3" />
-            <h1 className="text-4xl font-bold text-purple-800">CycleWise</h1>
+            <h1 className="text-4xl font-bold text-purple-800">CycleWise — PCOS &amp; Cycle Tracking</h1>
           </div>
           <p className="text-xl text-purple-600 mb-2">Your comprehensive PCOS and cycle tracking companion</p>
           <p className="text-gray-600">Take a quick assessment to understand your PCOS risk</p>
@@ -79,7 +88,7 @@ const Welcome = () => {
           onComplete={handleAssessmentComplete}
           guestMode={true}
         />
-      </div>
+      </main>
     </div>
   );
 };
