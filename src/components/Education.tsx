@@ -1,5 +1,6 @@
 
 import { useState } from 'react';
+import { Helmet } from 'react-helmet-async';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Badge } from '@/components/ui/badge';
@@ -13,6 +14,7 @@ export const Education = () => {
     { id: 'pcos-basics', label: 'PCOS Basics', icon: BookOpen },
     { id: 'symptoms', label: 'Symptoms & Signs', icon: AlertTriangle },
     { id: 'management', label: 'Management', icon: Heart },
+    { id: 'ovulation', label: 'Ovulation & PCOS', icon: Heart },
     { id: 'myths', label: 'Myths & Facts', icon: Lightbulb },
   ];
 
@@ -83,6 +85,34 @@ export const Education = () => {
           question: 'Cultural considerations for South Asian women',
           answer: 'Consider dietary preferences (incorporating traditional foods like turmeric, fenugreek), family dynamics in treatment decisions, and addressing cultural stigma around reproductive health. Traditional practices like yoga and meditation can complement medical treatment.',
           important: true
+        }
+      ]
+    },
+    'ovulation': {
+      title: 'How to Track Ovulation with PCOS',
+      content: [
+        {
+          question: 'Why is tracking ovulation harder with PCOS?',
+          answer: 'PCOS often causes irregular or missed ovulation, so calendar-based methods that assume a 28-day cycle are unreliable. Hormonal imbalances (high LH baseline, elevated androgens) can also confuse standard ovulation predictor kits, which look for an LH surge.',
+          important: true
+        },
+        {
+          question: 'Which signs actually work for PCOS?',
+          answer: 'Combine multiple signals: daily basal body temperature (BBT) — a sustained rise of ~0.5°F confirms ovulation happened; cervical mucus changes (clear, stretchy, egg-white texture near ovulation); and cycle-length tracking over several months to find your personal pattern.',
+          important: true
+        },
+        {
+          question: 'Should I use ovulation predictor kits (OPKs)?',
+          answer: 'OPKs can work but may show false positives in PCOS because of chronically elevated LH. Consider digital OPKs that track baseline, or test twice daily near the expected fertile window. Pair OPK results with BBT to confirm ovulation actually occurred.',
+        },
+        {
+          question: 'How does CycleWise help?',
+          answer: 'Log every period start in the Tracker, and CycleWise uses a weighted average of your last four cycles to estimate your fertile window and next period — recalibrating as your data grows. Add symptom logs (mucus, mood, energy) to spot your personal ovulation pattern over time.',
+          important: true
+        },
+        {
+          question: 'When should I involve a doctor?',
+          answer: 'If you have fewer than 8 periods a year, are trying to conceive without success for 6+ months, or your tracking suggests you are not ovulating, talk to a healthcare provider. Blood work (progesterone, LH/FSH) and ultrasound can confirm ovulation and guide treatment.',
         }
       ]
     },
