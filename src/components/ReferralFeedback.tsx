@@ -25,8 +25,8 @@ export const ReferralFeedback = () => {
 
   const handleShare = async () => {
     const shareData = {
-      title: 'CycleWise - PCOS & Cycle Tracking',
-      text: 'Check out CycleWise - a comprehensive PCOS and cycle tracking app!',
+      title: 'OvaFlow - PCOS & Cycle Tracking',
+      text: 'Check out OvaFlow - a comprehensive PCOS and cycle tracking app!',
       url: referralLink,
     };
 
@@ -37,7 +37,7 @@ export const ReferralFeedback = () => {
         await navigator.clipboard.writeText(referralLink);
         toast({
           title: 'Link Copied!',
-          description: 'Share CycleWise with your friends',
+          description: 'Share OvaFlow with your friends',
         });
       }
     } catch (error) {
@@ -108,7 +108,7 @@ export const ReferralFeedback = () => {
                 <Share2 className="w-4 h-4 mr-1.5" />
                 Share & Feedback
               </h3>
-              <p className="text-xs text-gray-600">Help others discover CycleWise or share your thoughts</p>
+              <p className="text-xs text-gray-600">Help others discover OvaFlow or share your thoughts</p>
             </div>
             
             <div className="flex gap-2">
@@ -128,7 +128,7 @@ export const ReferralFeedback = () => {
       <Dialog open={showDialog} onOpenChange={setShowDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Rate CycleWise</DialogTitle>
+            <DialogTitle>Rate OvaFlow</DialogTitle>
             <DialogDescription>
               Your feedback helps us improve the app for everyone
             </DialogDescription>

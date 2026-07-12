@@ -61,10 +61,10 @@ const Welcome = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-50 to-purple-50">
       <Helmet>
-        <title>CycleWise — PCOS and Cycle Tracking Companion</title>
-        <meta name="description" content="Take a free PCOS risk assessment and start tracking your cycle, symptoms, and hormonal health with CycleWise." />
+        <title>OvaFlow PCOS and Cycle Tracking Companion</title>
+        <meta name="description" content="Take a free PCOS risk assessment and start tracking your cycle, symptoms, and hormonal health with OvaFlow." />
         <link rel="canonical" href="/" />
-        <meta property="og:title" content="CycleWise — PCOS and Cycle Tracking Companion" />
+        <meta property="og:title" content="OvaFlow PCOS and Cycle Tracking Companion" />
         <meta property="og:description" content="Take a free PCOS risk assessment and start tracking your cycle." />
         <meta property="og:url" content="/" />
       </Helmet>
@@ -72,7 +72,7 @@ const Welcome = () => {
         <div className="text-center mb-8">
           <div className="flex items-center justify-center mb-4">
             <Heart className="w-12 h-12 text-pink-500 mr-3" />
-            <h1 className="text-4xl font-bold text-purple-800">CycleWise — PCOS &amp; Cycle Tracking</h1>
+            <h1 className="text-4xl font-bold text-purple-800">OvaFlow PCOS &amp; Cycle Tracking</h1>
           </div>
           <p className="text-xl text-purple-600 mb-2">Your comprehensive PCOS and cycle tracking companion</p>
           <p className="text-gray-600">Take a quick assessment to understand your PCOS risk</p>

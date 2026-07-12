@@ -1,8 +1,8 @@
-# CycleWise
+# OvaFlow
 
-> PCOS and cycle tracking companion — take a PCOS risk assessment, log periods and symptoms, and get personalized predictions and education.
+> PCOS and cycle tracking companion take a PCOS risk assessment, log periods and symptoms, and get personalized predictions and education.
 
-CycleWise helps women understand their menstrual cycle and PCOS risk. The homepage offers an assessment anyone can take; the rest of the app (dashboard, tracker, calendar, education) is available after sign-in.
+OvaFlow helps women understand their menstrual cycle and PCOS risk. The homepage offers an assessment anyone can take; the rest of the app (dashboard, tracker, calendar, education) is available after sign-in.
 
 ## Pages
 

@@ -98,7 +98,7 @@ export const Education = () => {
         },
         {
           question: 'Which signs actually work for PCOS?',
-          answer: 'Combine multiple signals: daily basal body temperature (BBT) — a sustained rise of ~0.5°F confirms ovulation happened; cervical mucus changes (clear, stretchy, egg-white texture near ovulation); and cycle-length tracking over several months to find your personal pattern.',
+          answer: 'Combine multiple signals: daily basal body temperature (BBT) a sustained rise of ~0.5°F confirms ovulation happened; cervical mucus changes (clear, stretchy, egg-white texture near ovulation); and cycle-length tracking over several months to find your personal pattern.',
           important: true
         },
         {
@@ -106,8 +106,8 @@ export const Education = () => {
           answer: 'OPKs can work but may show false positives in PCOS because of chronically elevated LH. Consider digital OPKs that track baseline, or test twice daily near the expected fertile window. Pair OPK results with BBT to confirm ovulation actually occurred.',
         },
         {
-          question: 'How does CycleWise help?',
-          answer: 'Log every period start in the Tracker, and CycleWise uses a weighted average of your last four cycles to estimate your fertile window and next period — recalibrating as your data grows. Add symptom logs (mucus, mood, energy) to spot your personal ovulation pattern over time.',
+          question: 'How does OvaFlow help?',
+          answer: 'Log every period start in the Tracker, and OvaFlow uses a weighted average of your last four cycles to estimate your fertile window and next period recalibrating as your data grows. Add symptom logs (mucus, mood, energy) to spot your personal ovulation pattern over time.',
           important: true
         },
         {

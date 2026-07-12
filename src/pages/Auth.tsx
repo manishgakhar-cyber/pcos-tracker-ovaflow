@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { useToast } from '@/hooks/use-toast';
 import { z } from 'zod';
 import { Helmet } from 'react-helmet-async';
+import { ArrowLeft } from 'lucide-react';
 
 const emailSchema = z.string().email('Invalid email address');
 const passwordSchema = z.string().min(6, 'Password must be at least 6 characters');
@@ -242,12 +243,12 @@ const Auth = () => {
     return (
       <div className="min-h-screen bg-gradient-to-br from-pink-50 to-purple-50 flex items-center justify-center p-4">
         <Helmet>
-          <title>Reset Password — CycleWise</title>
-          <meta name="description" content="Set a new password for your CycleWise account." />
+          <title>Reset Password OvaFlow</title>
+          <meta name="description" content="Set a new password for your OvaFlow account." />
           <link rel="canonical" href="/auth" />
         </Helmet>
         <main className="w-full max-w-md">
-        <h1 className="sr-only">Reset your CycleWise password</h1>
+        <h1 className="sr-only">Reset your OvaFlow password</h1>
         <Card>
           <CardHeader className="text-center">
             <CardTitle className="text-3xl font-bold text-purple-800">Reset Password</CardTitle>
@@ -284,17 +285,26 @@ const Auth = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-50 to-purple-50 flex items-center justify-center p-4">
       <Helmet>
-        <title>Sign in — CycleWise</title>
-        <meta name="description" content="Sign in or create a CycleWise account to save your PCOS assessment, log cycles, and get personalized predictions." />
+        <title>Sign in OvaFlow</title>
+        <meta name="description" content="Sign in or create a OvaFlow account to save your PCOS assessment, log cycles, and get personalized predictions." />
         <link rel="canonical" href="/auth" />
-        <meta property="og:title" content="Sign in — CycleWise" />
+        <meta property="og:title" content="Sign in OvaFlow" />
         <meta property="og:url" content="/auth" />
       </Helmet>
       <main className="w-full max-w-md">
-      <h1 className="sr-only">Sign in to CycleWise</h1>
+      <Button
+        type="button"
+        variant="ghost"
+        onClick={() => navigate('/')}
+        className="mb-4 -ml-2 text-purple-700 hover:text-purple-900"
+      >
+        <ArrowLeft className="mr-2 h-4 w-4" />
+        Back to assessment
+      </Button>
+      <h1 className="sr-only">Sign in to OvaFlow</h1>
       <Card>
         <CardHeader className="text-center">
-          <CardTitle className="text-3xl font-bold text-purple-800">CycleWise</CardTitle>
+          <CardTitle className="text-3xl font-bold text-purple-800">OvaFlow</CardTitle>
           <CardDescription>Your comprehensive PCOS and cycle tracking companion</CardDescription>
         </CardHeader>
         <CardContent>
