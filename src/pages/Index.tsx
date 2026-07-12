@@ -140,10 +140,10 @@ const Index = () => {
     return (
       <div className="min-h-screen bg-gradient-to-br from-pink-50 to-purple-50">
         <Helmet>
-          <title>PCOS Assessment — CycleWise</title>
-          <meta name="description" content="Complete your PCOS risk assessment to unlock personalized cycle tracking and insights on CycleWise." />
+          <title>PCOS Assessment OvaFlow</title>
+          <meta name="description" content="Complete your PCOS risk assessment to unlock personalized cycle tracking and insights on OvaFlow." />
           <link rel="canonical" href="/dashboard" />
-          <meta property="og:title" content="PCOS Assessment — CycleWise" />
+          <meta property="og:title" content="PCOS Assessment OvaFlow" />
           <meta property="og:url" content="/dashboard" />
         </Helmet>
         <main className="container mx-auto px-4 py-6">
@@ -159,7 +159,7 @@ const Index = () => {
                   </Button>
                 )}
               </div>
-              <h1 className="text-4xl font-bold text-purple-800 flex-1">CycleWise — Your PCOS Dashboard</h1>
+              <h1 className="text-4xl font-bold text-purple-800 flex-1">OvaFlow Your PCOS Dashboard</h1>
               <div className="flex-1 flex justify-end">
                 <Button variant="outline" onClick={handleLogout}>
                   Logout
@@ -189,10 +189,10 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-50 to-purple-50">
       <Helmet>
-        <title>Dashboard — CycleWise</title>
-        <meta name="description" content="Your CycleWise dashboard: track cycles, log symptoms, view predictions, and learn about PCOS." />
+        <title>Dashboard OvaFlow</title>
+        <meta name="description" content="Your OvaFlow dashboard: track cycles, log symptoms, view predictions, and learn about PCOS." />
         <link rel="canonical" href="/dashboard" />
-        <meta property="og:title" content="Dashboard — CycleWise" />
+        <meta property="og:title" content="Dashboard OvaFlow" />
         <meta property="og:url" content="/dashboard" />
       </Helmet>
       <Tutorial open={showTutorial} onClose={handleCloseTutorial} />
@@ -201,7 +201,7 @@ const Index = () => {
         <div className="text-center mb-8">
           <div className="flex justify-between items-center mb-2">
             <div className="flex-1" />
-            <h1 className="text-4xl font-bold text-purple-800 flex-1">CycleWise — Your PCOS Dashboard</h1>
+            <h1 className="text-4xl font-bold text-purple-800 flex-1">OvaFlow Your PCOS Dashboard</h1>
             <div className="flex-1 flex justify-end">
               <Button variant="outline" onClick={handleLogout}>
                 Logout

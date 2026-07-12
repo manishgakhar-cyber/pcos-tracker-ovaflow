@@ -242,12 +242,12 @@ const Auth = () => {
     return (
       <div className="min-h-screen bg-gradient-to-br from-pink-50 to-purple-50 flex items-center justify-center p-4">
         <Helmet>
-          <title>Reset Password — CycleWise</title>
-          <meta name="description" content="Set a new password for your CycleWise account." />
+          <title>Reset Password OvaFlow</title>
+          <meta name="description" content="Set a new password for your OvaFlow account." />
           <link rel="canonical" href="/auth" />
         </Helmet>
         <main className="w-full max-w-md">
-        <h1 className="sr-only">Reset your CycleWise password</h1>
+        <h1 className="sr-only">Reset your OvaFlow password</h1>
         <Card>
           <CardHeader className="text-center">
             <CardTitle className="text-3xl font-bold text-purple-800">Reset Password</CardTitle>
@@ -284,17 +284,17 @@ const Auth = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-50 to-purple-50 flex items-center justify-center p-4">
       <Helmet>
-        <title>Sign in — CycleWise</title>
-        <meta name="description" content="Sign in or create a CycleWise account to save your PCOS assessment, log cycles, and get personalized predictions." />
+        <title>Sign in OvaFlow</title>
+        <meta name="description" content="Sign in or create a OvaFlow account to save your PCOS assessment, log cycles, and get personalized predictions." />
         <link rel="canonical" href="/auth" />
-        <meta property="og:title" content="Sign in — CycleWise" />
+        <meta property="og:title" content="Sign in OvaFlow" />
         <meta property="og:url" content="/auth" />
       </Helmet>
       <main className="w-full max-w-md">
-      <h1 className="sr-only">Sign in to CycleWise</h1>
+      <h1 className="sr-only">Sign in to OvaFlow</h1>
       <Card>
         <CardHeader className="text-center">
-          <CardTitle className="text-3xl font-bold text-purple-800">CycleWise</CardTitle>
+          <CardTitle className="text-3xl font-bold text-purple-800">OvaFlow</CardTitle>
           <CardDescription>Your comprehensive PCOS and cycle tracking companion</CardDescription>
         </CardHeader>
         <CardContent>

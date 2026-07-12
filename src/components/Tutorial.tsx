@@ -10,7 +10,7 @@ interface TutorialProps {
 
 const tutorialSteps = [
   {
-    title: 'Welcome to CycleWise! 👋',
+    title: 'Welcome to OvaFlow! 👋',
     description: 'Your comprehensive PCOS and cycle tracking companion. Let\'s take a quick tour of the features!',
     icon: <Activity className="w-12 h-12 text-purple-600 mx-auto" />,
   },
