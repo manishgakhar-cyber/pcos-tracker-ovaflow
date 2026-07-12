@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { useToast } from '@/hooks/use-toast';
 import { z } from 'zod';
 import { Helmet } from 'react-helmet-async';
+import { ArrowLeft } from 'lucide-react';
 
 const emailSchema = z.string().email('Invalid email address');
 const passwordSchema = z.string().min(6, 'Password must be at least 6 characters');
@@ -291,6 +292,15 @@ const Auth = () => {
         <meta property="og:url" content="/auth" />
       </Helmet>
       <main className="w-full max-w-md">
+      <Button
+        type="button"
+        variant="ghost"
+        onClick={() => navigate('/')}
+        className="mb-4 -ml-2 text-purple-700 hover:text-purple-900"
+      >
+        <ArrowLeft className="mr-2 h-4 w-4" />
+        Back to assessment
+      </Button>
       <h1 className="sr-only">Sign in to OvaFlow</h1>
       <Card>
         <CardHeader className="text-center">
