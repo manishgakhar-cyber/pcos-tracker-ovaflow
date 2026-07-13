@@ -107,8 +107,7 @@ export const HelpButton = () => {
                 <h3 className="font-semibold text-purple-800 mb-1">9. Children</h3>
                 <p>
                   OvaFlow is intended for users 9 and older, but age limits are flexible based on
-                  parental guidance and local regulations. If you believe a child has created an
-                  account inappropriately, contact us and we will delete it.
+                  parental guidance and local regulations.
                 </p>
               </section>
 
