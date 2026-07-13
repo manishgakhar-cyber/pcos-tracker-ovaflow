@@ -106,8 +106,9 @@ export const HelpButton = () => {
               <section>
                 <h3 className="font-semibold text-purple-800 mb-1">9. Children</h3>
                 <p>
-                  OvaFlow is not intended for users under 13. If you believe a child has created
-                  an account, contact us and we will delete it.
+                  OvaFlow is intended for users 9 and older, but age limits are flexible based on
+                  parental guidance and local regulations. If you believe a child has created an
+                  account inappropriately, contact us and we will delete it.
                 </p>
               </section>
 
@@ -115,7 +116,7 @@ export const HelpButton = () => {
                 <h3 className="font-semibold text-purple-800 mb-1">10. Contact</h3>
                 <p>
                   Questions about your data or this policy? Reach us at
-                  {' '}<a href="mailto:privacy@ovaflow.app" className="text-purple-700 underline">privacy@ovaflow.app</a>.
+                  {' '}<a href="mailto:ovaflow.support@gmail.com" className="text-purple-700 underline">ovaflow.support@gmail.com</a>.
                 </p>
               </section>
             </div>
