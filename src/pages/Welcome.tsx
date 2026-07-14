@@ -29,10 +29,13 @@ const Welcome = () => {
   const handleAssessmentComplete = (data: any) => {
     setAssessmentData(data);
     setShowResults(true);
+    try {
+      localStorage.setItem('ovaflow_assessment_completed', 'true');
+    } catch {}
   };
 
   const handleSignUpPrompt = () => {
-    navigate('/auth');
+    navigate('/auth?tab=signup');
   };
 
   if (loading) {
