@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -31,13 +31,41 @@ const Auth = () => {
   const [resetDialogOpen, setResetDialogOpen] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
 
+  const assessmentCompleted = useMemo(() => {
+    try {
+      return localStorage.getItem('ovaflow_assessment_completed') === 'true';
+    } catch {
+      return false;
+    }
+  }, []);
+
+  const requestedTab = searchParams.get('tab');
+  const defaultTab =
+    requestedTab === 'signup' && assessmentCompleted ? 'signup' : 'signin';
+
   useEffect(() => {
-    // Check if this is a password reset redirect
+    // Password recovery links arrive with a hash fragment that supabase-js
+    // parses into a session and then fires PASSWORD_RECOVERY.
     const type = searchParams.get('type');
-    if (type === 'recovery') {
+    if (type === 'recovery' || window.location.hash.includes('type=recovery')) {
       setIsResetting(true);
     }
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      if (event === 'PASSWORD_RECOVERY') setIsResetting(true);
+    });
+    return () => subscription.unsubscribe();
   }, [searchParams]);
+
+  // Block direct access to signup when assessment hasn't been taken.
+  useEffect(() => {
+    if (requestedTab === 'signup' && !assessmentCompleted) {
+      toast({
+        title: 'Take the assessment first',
+        description: 'Please complete the PCOS risk assessment before creating an account.',
+      });
+      navigate('/', { replace: true });
+    }
+  }, [requestedTab, assessmentCompleted, navigate, toast]);
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -85,12 +113,10 @@ const Auth = () => {
         }
       } else {
         toast({
-          title: 'Success!',
-          description: 'Account created successfully. Signing you in...',
+          title: 'Check your email',
+          description:
+            'We sent a confirmation link to your email. Confirm it to finish creating your account.',
         });
-        
-        // Auto sign in after successful signup
-        navigate('/dashboard');
       }
     } catch (error: any) {
       toast({
@@ -175,7 +201,7 @@ const Auth = () => {
     setLoading(true);
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(resetEmail, {
-        redirectTo: `${window.location.origin}/auth`,
+        redirectTo: `${window.location.origin}/auth?type=recovery`,
       });
 
       if (error) throw error;
@@ -308,10 +334,14 @@ const Auth = () => {
           <CardDescription>Your comprehensive PCOS and cycle tracking companion</CardDescription>
         </CardHeader>
         <CardContent>
-          <Tabs defaultValue="signin" className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
+          <Tabs defaultValue={defaultTab} className="w-full">
+            <TabsList
+              className={`grid w-full ${assessmentCompleted ? 'grid-cols-2' : 'grid-cols-1'}`}
+            >
               <TabsTrigger value="signin">Sign In</TabsTrigger>
-              <TabsTrigger value="signup">Sign Up</TabsTrigger>
+              {assessmentCompleted && (
+                <TabsTrigger value="signup">Sign Up</TabsTrigger>
+              )}
             </TabsList>
             
             <TabsContent value="signin">
@@ -379,6 +409,7 @@ const Auth = () => {
               </form>
             </TabsContent>
             
+            {assessmentCompleted && (
             <TabsContent value="signup">
               <form onSubmit={handleSignUp} className="space-y-4">
                 <div className="space-y-2">
@@ -437,6 +468,7 @@ const Auth = () => {
                 </Button>
               </form>
             </TabsContent>
+            )}
           </Tabs>
         </CardContent>
       </Card>
