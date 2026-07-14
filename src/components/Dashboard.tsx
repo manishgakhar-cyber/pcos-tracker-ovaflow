@@ -7,7 +7,6 @@ import { Calendar, TrendingUp, AlertTriangle, Heart, Moon, Sparkles, Sun, Drople
 import { supabase } from '@/integrations/supabase/client';
 import { useEffect, useState } from 'react';
 import { computeCycleInsights } from '@/lib/cycleUtils';
-import { ReminderSettings } from './ReminderSettings';
 import { ReferralFeedback } from './ReferralFeedback';
 
 type CyclePhase = {
@@ -336,9 +335,6 @@ export const Dashboard = ({ onEditAssessment }: { onEditAssessment?: () => void 
           )}
         </CardContent>
       </Card>
-
-      {/* Reminder Settings */}
-      <ReminderSettings />
 
       {/* Referral & Feedback */}
       <ReferralFeedback />
