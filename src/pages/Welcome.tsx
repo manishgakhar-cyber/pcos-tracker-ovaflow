@@ -15,15 +15,26 @@ const Welcome = () => {
 
   // Check if user is already logged in
   useEffect(() => {
-    const checkAuth = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
+    // Listen for auth changes (fires after email confirmation link hydrates the session)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        if (session) {
+          navigate('/dashboard', { replace: true });
+        } else {
+          setLoading(false);
+        }
+      }
+    );
+
+    supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
         navigate('/dashboard', { replace: true });
       } else {
         setLoading(false);
       }
-    };
-    checkAuth();
+    });
+
+    return () => subscription.unsubscribe();
   }, [navigate]);
 
   const handleAssessmentComplete = (data: any) => {
