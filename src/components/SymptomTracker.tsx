@@ -365,39 +365,6 @@ export const SymptomTracker = () => {
         <p className="text-gray-600">Log your period and symptoms separately</p>
       </div>
 
-      {/* Date Selection */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Select Date</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button
-                variant="outline"
-                className={cn(
-                  "w-full justify-start text-left font-normal",
-                  !selectedDate && "text-muted-foreground"
-                )}
-              >
-                <CalendarIcon className="mr-2 h-4 w-4" />
-                {selectedDate ? format(selectedDate, "PPP") : "Pick a date"}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="start">
-              <Calendar
-                mode="single"
-                selected={selectedDate}
-                onSelect={setSelectedDate}
-                disabled={(date) => date > new Date() || date < new Date(new Date().setFullYear(new Date().getFullYear() - 2))}
-                initialFocus
-                className="pointer-events-auto"
-              />
-            </PopoverContent>
-          </Popover>
-        </CardContent>
-      </Card>
-
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Period Logging */}
         <Card>
