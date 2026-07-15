@@ -171,14 +171,7 @@ export const Dashboard = ({ onEditAssessment }: { onEditAssessment?: () => void 
   if (riskData?.risk_score && riskData.risk_score > 0) {
     riskScore = riskData.risk_score;
   } else if (riskData?.assessment_data) {
-    try {
-      // Lazy import to keep bundle small; require is not available in ESM,
-      // so use the top-level import already added below.
-      const { computeLocalRisk } = require('@/lib/pcosRisk');
-      riskScore = computeLocalRisk(riskData.assessment_data).riskScore;
-    } catch {
-      riskScore = null;
-    }
+    riskScore = computeLocalRisk(riskData.assessment_data).riskScore;
   }
   const riskLevel = riskScore !== null ? getRiskLevel(riskScore) : null;
 
