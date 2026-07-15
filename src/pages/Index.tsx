@@ -213,7 +213,7 @@ const Index = () => {
           <meta property="og:url" content="/dashboard" />
         </Helmet>
         <header className="sticky top-0 z-40 bg-gradient-to-br from-pink-50 to-purple-50/95 backdrop-blur border-b border-purple-100">
-          <div className="container mx-auto px-4 py-3 flex items-center justify-between gap-2">
+          <div className="container mx-auto px-4 py-2 flex items-center justify-between gap-2">
             {showAssessmentForm && hasCompletedAssessment ? (
               <Button
                 variant="ghost"
@@ -227,8 +227,8 @@ const Index = () => {
               <div className="w-16" />
             )}
             <div className="flex items-center gap-2 min-w-0">
-              <img src={ovaflowLogo.url} alt="OvaFlow logo" className="w-8 h-8 rounded-full shrink-0" />
-              <h1 className="text-base sm:text-xl font-bold text-purple-800 truncate text-center">
+              <img src={ovaflowLogo.url} alt="OvaFlow logo" className="w-10 h-10 sm:w-12 sm:h-12 rounded-full shrink-0" />
+              <h1 className="text-2xl sm:text-3xl font-bold tracking-tight bg-gradient-to-r from-purple-700 to-pink-600 bg-clip-text text-transparent truncate">
                 OvaFlow
               </h1>
             </div>
@@ -237,18 +237,18 @@ const Index = () => {
             </Button>
           </div>
         </header>
-        <main className="container mx-auto px-4 py-6">
-          <div className="text-center mb-6">
-            <h2 className="text-2xl sm:text-3xl font-bold text-purple-800 mb-2">
+        <main className="container mx-auto px-4 py-4">
+          <div className="text-center mb-4">
+            <h2 className="text-xl sm:text-2xl font-bold text-purple-800 mb-1">
               PCOS Assessment
             </h2>
-            <p className="text-purple-600 text-sm sm:text-base">
+            <p className="text-purple-600 text-sm">
               {showAssessmentForm && hasCompletedAssessment 
                 ? 'Update your PCOS risk assessment' 
                 : 'Complete your PCOS risk assessment to get started'}
             </p>
             {userName && (
-              <p className="text-sm text-purple-500 mt-1">Hi, {userName}!</p>
+              <p className="text-xs text-purple-500 mt-1">Hi, {userName}!</p>
             )}
           </div>
           
@@ -274,12 +274,12 @@ const Index = () => {
       <Tutorial open={showTutorial} onClose={handleCloseTutorial} />
 
       <header className="sticky top-0 z-40 bg-gradient-to-br from-pink-50 to-purple-50/95 backdrop-blur border-b border-purple-100">
-        <div className="container mx-auto px-4 py-3 flex items-center justify-between gap-2">
+        <div className="container mx-auto px-4 py-2 flex items-center justify-between gap-2">
           <div className="min-w-0 flex-1 flex items-center gap-2">
-            <img src={ovaflowLogo.url} alt="OvaFlow logo" className="w-9 h-9 rounded-full shrink-0" />
-            <div className="min-w-0">
-              <h1 className="text-base sm:text-xl font-bold text-purple-800 truncate">
-                OvaFlow Dashboard
+            <img src={ovaflowLogo.url} alt="OvaFlow logo" className="w-11 h-11 sm:w-14 sm:h-14 rounded-full shrink-0" />
+            <div className="min-w-0 leading-tight">
+              <h1 className="text-2xl sm:text-3xl font-bold tracking-tight bg-gradient-to-r from-purple-700 to-pink-600 bg-clip-text text-transparent truncate">
+                OvaFlow
               </h1>
               {userName && (
                 <p className="text-xs text-purple-500 truncate">Hi, {userName}!</p>
@@ -292,7 +292,7 @@ const Index = () => {
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-6">
+      <main className="container mx-auto px-4 py-4">
         <Tabs defaultValue="dashboard" className="w-full">
           <TabsList className="grid w-full grid-cols-4 mb-6 h-auto">
             <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
