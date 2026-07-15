@@ -84,19 +84,15 @@ const Welcome = () => {
         <meta property="og:url" content="/" />
       </Helmet>
       <main className="container mx-auto px-4 py-6">
-        <div className="text-center mb-8">
-          <div className="flex items-center justify-center mb-4">
-            <Heart className="w-12 h-12 text-pink-500 mr-3" />
-            <h1 className="text-4xl font-bold text-purple-800">OvaFlow PCOS &amp; Cycle Tracking</h1>
+        <div className="text-center mb-6">
+          <div className="flex items-center justify-center gap-2 mb-2">
+            <Heart className="w-7 h-7 text-pink-500" />
+            <h1 className="text-2xl sm:text-3xl font-bold text-purple-800">OvaFlow</h1>
           </div>
-          <p className="text-xl text-purple-600 mb-2">Your comprehensive PCOS and cycle tracking companion</p>
-          <p className="text-gray-600">Take a quick assessment to understand your PCOS risk</p>
-          
-          <div className="mt-4">
-            <Button variant="link" onClick={() => navigate('/auth')} className="text-purple-600">
-              Already have an account? Sign in
-            </Button>
-          </div>
+          <p className="text-sm text-gray-600">Take a quick assessment to understand your PCOS risk</p>
+          <Button variant="link" onClick={() => navigate('/auth')} className="text-purple-600 mt-1">
+            Already have an account? Sign in
+          </Button>
         </div>
         
         <PCOSAssessmentForm 
