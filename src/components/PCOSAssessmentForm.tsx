@@ -327,9 +327,8 @@ export const PCOSAssessmentForm = ({ onComplete, isEdit = false, guestMode = fal
           : "Your PCOS risk assessment has been saved successfully.",
       });
       
-      if (onComplete) {
-        onComplete();
-      }
+      // Show results screen before returning to parent
+      setShowResults(true);
     } catch (error) {
       console.error('Assessment submission error:', error);
       const errorMessage = error instanceof Error ? error.message : 'Failed to save assessment. Please try again.';
@@ -660,8 +659,8 @@ export const PCOSAssessmentForm = ({ onComplete, isEdit = false, guestMode = fal
                       </FormControl>
                       <SelectContent>
                         <SelectItem value="no-change">No significant change</SelectItem>
-                        <SelectItem value="gained-5-10">Gained 5-10 kg</SelectItem>
-                        <SelectItem value="gained-10plus">Gained 10+ kg</SelectItem>
+                        <SelectItem value="gained-5-10">Gained 10-20 lbs</SelectItem>
+                        <SelectItem value="gained-10plus">Gained 20+ lbs</SelectItem>
                         <SelectItem value="lost-weight">Lost weight</SelectItem>
                         <SelectItem value="difficulty-losing">Difficulty losing weight</SelectItem>
                       </SelectContent>

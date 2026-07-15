@@ -109,13 +109,21 @@ export const CycleCalendar = () => {
     );
     const lastCycle = sortedCycles[0];
     const lastPeriodStart = new Date(lastCycle.period_start_date);
+    const earliestCycle = sortedCycles[sortedCycles.length - 1];
+    const earliestPeriodStart = new Date(earliestCycle.period_start_date);
     
     const predictions: Date[] = [];
+    // Future predictions
     let nextPredicted = addDays(lastPeriodStart, avgCycleLengthCalc);
-    
-    for (let i = 0; i < 6; i++) {
+    for (let i = 0; i < 24; i++) {
       predictions.push(nextPredicted);
       nextPredicted = addDays(nextPredicted, avgCycleLengthCalc);
+    }
+    // Past predictions (extrapolate before earliest logged cycle)
+    let prevPredicted = addDays(earliestPeriodStart, -avgCycleLengthCalc);
+    for (let i = 0; i < 24; i++) {
+      predictions.push(prevPredicted);
+      prevPredicted = addDays(prevPredicted, -avgCycleLengthCalc);
     }
     
     return predictions;
@@ -151,8 +159,20 @@ export const CycleCalendar = () => {
     }
     
     // Generate fertility windows for future predicted cycles
-    for (let cycleOffset = 1; cycleOffset <= 6; cycleOffset++) {
+    for (let cycleOffset = 1; cycleOffset <= 24; cycleOffset++) {
       const cycleStart = addDays(lastPeriodStart, cycleOffset * avgCycleLengthCalc);
+      ovulationDates.push(addDays(cycleStart, ovulationDay));
+      for (let day = fertileStart; day <= fertileEnd; day++) {
+        if (day !== ovulationDay) {
+          fertilityDates.push(addDays(cycleStart, day));
+        }
+      }
+    }
+    // Generate fertility windows for past predicted cycles (before earliest logged)
+    const earliestCycle = sortedCycles[sortedCycles.length - 1];
+    const earliestPeriodStart = new Date(earliestCycle.period_start_date);
+    for (let cycleOffset = 1; cycleOffset <= 24; cycleOffset++) {
+      const cycleStart = addDays(earliestPeriodStart, -cycleOffset * avgCycleLengthCalc);
       ovulationDates.push(addDays(cycleStart, ovulationDay));
       for (let day = fertileStart; day <= fertileEnd; day++) {
         if (day !== ovulationDay) {
