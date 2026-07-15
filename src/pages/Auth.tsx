@@ -352,10 +352,10 @@ const Auth = () => {
         <CardContent>
           <Tabs defaultValue={defaultTab} className="w-full">
             <TabsList
-              className={`grid w-full ${assessmentCompleted ? 'grid-cols-2' : 'grid-cols-1'}`}
+              className={`grid w-full ${signupAllowed ? 'grid-cols-2' : 'grid-cols-1'}`}
             >
               <TabsTrigger value="signin">Sign In</TabsTrigger>
-              {assessmentCompleted && (
+              {signupAllowed && (
                 <TabsTrigger value="signup">Sign Up</TabsTrigger>
               )}
             </TabsList>
@@ -436,7 +436,7 @@ const Auth = () => {
               </form>
             </TabsContent>
             
-            {assessmentCompleted && (
+            {signupAllowed && (
             <TabsContent value="signup">
               <form onSubmit={handleSignUp} className="space-y-4">
                 <div className="space-y-2">
