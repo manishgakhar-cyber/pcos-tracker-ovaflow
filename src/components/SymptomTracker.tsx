@@ -249,10 +249,10 @@ export const SymptomTracker = () => {
       }
 
       toast({
-        title: "Period logged!",
+        title: "Saved to your calendar",
         description: periodEndDate 
-          ? `Logged ${flowIntensity} flow from ${format(periodStartDate, 'PPP')} to ${format(periodEndDate, 'PPP')}`
-          : `Logged ${flowIntensity} flow for ${format(periodStartDate, 'PPP')}`,
+          ? `Period (${flowIntensity} flow) logged from ${format(periodStartDate, 'PPP')} to ${format(periodEndDate, 'PPP')}.`
+          : `Period (${flowIntensity} flow) logged for ${format(periodStartDate, 'PPP')}.`,
       });
       
       setPeriodStartDate(undefined);
@@ -339,8 +339,8 @@ export const SymptomTracker = () => {
       }
 
       toast({
-        title: "Symptoms logged!",
-        description: `Logged ${selectedSymptoms.length} symptoms for ${format(selectedDate, 'PPP')}`,
+        title: "Saved to your calendar",
+        description: `${selectedSymptoms.length} symptom${selectedSymptoms.length === 1 ? '' : 's'} logged for ${format(selectedDate, 'PPP')}.`,
       });
       
       // Reset form
@@ -364,39 +364,6 @@ export const SymptomTracker = () => {
         <h2 className="text-3xl font-bold text-gray-900">Track Your Health</h2>
         <p className="text-gray-600">Log your period and symptoms separately</p>
       </div>
-
-      {/* Date Selection */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Select Date</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button
-                variant="outline"
-                className={cn(
-                  "w-full justify-start text-left font-normal",
-                  !selectedDate && "text-muted-foreground"
-                )}
-              >
-                <CalendarIcon className="mr-2 h-4 w-4" />
-                {selectedDate ? format(selectedDate, "PPP") : "Pick a date"}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="start">
-              <Calendar
-                mode="single"
-                selected={selectedDate}
-                onSelect={setSelectedDate}
-                disabled={(date) => date > new Date() || date < new Date(new Date().setFullYear(new Date().getFullYear() - 2))}
-                initialFocus
-                className="pointer-events-auto"
-              />
-            </PopoverContent>
-          </Popover>
-        </CardContent>
-      </Card>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Period Logging */}
@@ -508,6 +475,34 @@ export const SymptomTracker = () => {
             <CardTitle className="text-lg">Log Symptoms</CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
+            <div>
+              <Label className="text-sm font-medium">Date</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-full justify-start text-left font-normal mt-2",
+                      !selectedDate && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {selectedDate ? format(selectedDate, "PPP") : "Pick a date"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={selectedDate}
+                    onSelect={setSelectedDate}
+                    disabled={(date) => date > new Date() || date < new Date(new Date().setFullYear(new Date().getFullYear() - 2))}
+                    initialFocus
+                    className="pointer-events-auto"
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+
             {Object.entries(symptomCategories).map(([category, symptoms]) => (
               <div key={category}>
                 <h3 className="font-medium text-gray-900 mb-3">{category}</h3>
