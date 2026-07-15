@@ -376,15 +376,26 @@ const Auth = () => {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="signin-password">Password</Label>
-                  <Input
-                    id="signin-password"
-                    type="password"
-                    placeholder="••••••••"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                    disabled={loading}
-                  />
+                  <div className="relative">
+                    <Input
+                      id="signin-password"
+                      type={showPassword ? 'text' : 'password'}
+                      placeholder="••••••••"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
+                      disabled={loading}
+                      className="pr-10"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword((v) => !v)}
+                      className="absolute inset-y-0 right-0 flex items-center px-3 text-purple-600"
+                      aria-label={showPassword ? 'Hide password' : 'Show password'}
+                    >
+                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                  </div>
                 </div>
                 <Button type="submit" className="w-full" disabled={loading}>
                   {loading ? 'Signing in...' : 'Sign In'}
