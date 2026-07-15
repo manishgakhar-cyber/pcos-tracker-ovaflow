@@ -16,6 +16,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { supabase } from '@/integrations/supabase/client';
+import { computeLocalRisk } from '@/lib/pcosRisk';
 
 // Validation schema with comprehensive rules
 const assessmentSchema = z.object({
@@ -276,9 +277,11 @@ export const PCOSAssessmentForm = ({ onComplete, isEdit = false, guestMode = fal
         additionalNotes: formData.additionalNotes
       };
 
-      // Try the AI analysis, but never let it block saving the assessment.
-      let riskScore = 0;
-      let riskLevel: string = 'Low';
+      // Always compute a local heuristic score so the dashboard has data even
+      // if the AI call fails. AI result overrides when available.
+      const localRisk = computeLocalRisk(assessmentPayload as any);
+      let riskScore = localRisk.riskScore;
+      let riskLevel: string = localRisk.riskLevel;
       try {
         const { data: analysisData, error: analysisError } = await supabase.functions.invoke(
           'analyze-pcos-assessment',
@@ -287,8 +290,12 @@ export const PCOSAssessmentForm = ({ onComplete, isEdit = false, guestMode = fal
         if (analysisError) {
           console.error('Analysis error (continuing with fallback):', analysisError);
         } else if (analysisData) {
-          riskScore = analysisData.riskScore ?? 0;
-          riskLevel = analysisData.riskLevel ?? 'Low';
+          if (typeof analysisData.riskScore === 'number' && analysisData.riskScore > 0) {
+            riskScore = analysisData.riskScore;
+          }
+          if (analysisData.riskLevel) {
+            riskLevel = analysisData.riskLevel;
+          }
         }
       } catch (analysisErr) {
         console.error('Analysis threw (continuing with fallback):', analysisErr);

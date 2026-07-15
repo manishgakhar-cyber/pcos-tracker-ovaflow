@@ -7,6 +7,7 @@ import { Calendar, TrendingUp, AlertTriangle, Heart, Moon, Sparkles, Sun, Drople
 import { supabase } from '@/integrations/supabase/client';
 import { useEffect, useState } from 'react';
 import { computeCycleInsights } from '@/lib/cycleUtils';
+import { computeLocalRisk } from '@/lib/pcosRisk';
 import { ReferralFeedback } from './ReferralFeedback';
 
 type CyclePhase = {
@@ -165,8 +166,15 @@ export const Dashboard = ({ onEditAssessment }: { onEditAssessment?: () => void 
     return { level: 'High', color: 'bg-red-500' };
   };
 
-  const riskScore = riskData?.risk_score || null;
-  const riskLevel = riskScore ? getRiskLevel(riskScore) : null;
+  // Prefer stored risk score; if missing/zero, compute locally from the raw
+  // assessment data so the dashboard always reflects the user's answers.
+  let riskScore: number | null = null;
+  if (riskData?.risk_score && riskData.risk_score > 0) {
+    riskScore = riskData.risk_score;
+  } else if (riskData?.assessment_data) {
+    riskScore = computeLocalRisk(riskData.assessment_data).riskScore;
+  }
+  const riskLevel = riskScore !== null ? getRiskLevel(riskScore) : null;
 
   const hasAnyData = (Array.isArray(cycleData) && cycleData.length > 0) || riskData || recentSymptoms.length > 0;
   
