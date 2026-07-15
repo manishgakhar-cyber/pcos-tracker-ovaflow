@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { PCOSAssessmentForm } from '@/components/PCOSAssessmentForm';
 import { PCOSResults } from '@/components/PCOSResults';
 import { Button } from '@/components/ui/button';
-import { Heart } from 'lucide-react';
+import { Heart, Sparkles, CalendarHeart, LineChart } from 'lucide-react';
 import { Helmet } from 'react-helmet-async';
 
 const Welcome = () => {
@@ -83,19 +83,52 @@ const Welcome = () => {
         <meta property="og:description" content="Take a free PCOS risk assessment and start tracking your cycle." />
         <meta property="og:url" content="/" />
       </Helmet>
-      <main className="container mx-auto px-4 py-6">
+      <main className="container mx-auto px-4 pt-4 pb-8">
+        {/* Landing header */}
         <div className="text-center mb-6">
-          <div className="flex items-center justify-center gap-2 mb-2">
-            <Heart className="w-7 h-7 text-pink-500" />
-            <h1 className="text-2xl sm:text-3xl font-bold text-purple-800">OvaFlow</h1>
+          <div className="flex items-center justify-center gap-3 mb-3">
+            <Heart className="w-10 h-10 sm:w-12 sm:h-12 text-pink-500" />
+            <h1 className="text-4xl sm:text-6xl font-bold tracking-tight bg-gradient-to-r from-purple-700 to-pink-600 bg-clip-text text-transparent">
+              OvaFlow
+            </h1>
           </div>
-          <p className="text-sm text-gray-600">Take a quick assessment to understand your PCOS risk</p>
-          <Button variant="link" onClick={() => navigate('/auth')} className="text-purple-600 mt-1">
+          <p className="text-base sm:text-lg text-purple-800 font-medium max-w-2xl mx-auto">
+            Your all-in-one PCOS risk check and period tracker.
+          </p>
+          <p className="text-sm sm:text-base text-gray-600 max-w-2xl mx-auto mt-1">
+            Start with a quick PCOS assessment. Once you finish, OvaFlow turns into
+            your personal period tracker — logging cycles, predicting your next period,
+            tracking symptoms, and giving you insights about your hormonal health.
+          </p>
+          <Button
+            variant="link"
+            onClick={() => navigate('/auth')}
+            className="text-purple-600 mt-1"
+          >
             Already have an account? Sign in
           </Button>
         </div>
-        
-        <PCOSAssessmentForm 
+
+        {/* Feature highlights */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 max-w-3xl mx-auto mb-6">
+          <div className="rounded-xl bg-white/70 backdrop-blur border border-purple-100 p-3 text-center">
+            <Sparkles className="w-5 h-5 text-pink-500 mx-auto mb-1" />
+            <p className="text-sm font-semibold text-purple-800">PCOS Risk Check</p>
+            <p className="text-xs text-gray-600">Personalized insights in minutes</p>
+          </div>
+          <div className="rounded-xl bg-white/70 backdrop-blur border border-purple-100 p-3 text-center">
+            <CalendarHeart className="w-5 h-5 text-pink-500 mx-auto mb-1" />
+            <p className="text-sm font-semibold text-purple-800">Period Tracking</p>
+            <p className="text-xs text-gray-600">Log cycles and predict the next one</p>
+          </div>
+          <div className="rounded-xl bg-white/70 backdrop-blur border border-purple-100 p-3 text-center">
+            <LineChart className="w-5 h-5 text-pink-500 mx-auto mb-1" />
+            <p className="text-sm font-semibold text-purple-800">Symptom Insights</p>
+            <p className="text-xs text-gray-600">Spot patterns in your hormonal health</p>
+          </div>
+        </div>
+
+        <PCOSAssessmentForm
           onComplete={handleAssessmentComplete}
           guestMode={true}
         />
