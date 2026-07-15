@@ -78,9 +78,9 @@ const Auth = () => {
       lastNameSchema.parse(lastName);
     } catch (error) {
       if (error instanceof z.ZodError) {
+        const msg = error.errors[0].message;
         toast({
-          title: 'Validation Error',
-          description: error.errors[0].message,
+          title: msg,
           variant: 'destructive',
         });
         return;
@@ -138,9 +138,9 @@ const Auth = () => {
       passwordSchema.parse(password);
     } catch (error) {
       if (error instanceof z.ZodError) {
+        const msg = error.errors[0].message;
         toast({
-          title: 'Validation Error',
-          description: error.errors[0].message,
+          title: msg,
           variant: 'destructive',
         });
         return;
@@ -190,8 +190,7 @@ const Auth = () => {
     } catch (error) {
       if (error instanceof z.ZodError) {
         toast({
-          title: 'Validation Error',
-          description: error.errors[0].message,
+          title: error.errors[0].message,
           variant: 'destructive',
         });
         return;

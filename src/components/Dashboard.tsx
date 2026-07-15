@@ -174,14 +174,6 @@ export const Dashboard = ({ onEditAssessment }: { onEditAssessment?: () => void 
 
   return (
     <div className="space-y-6">
-      {/* Welcome Section */}
-      <div className="text-center space-y-2">
-        <h2 className="text-3xl font-bold text-gray-900">Welcome back!</h2>
-        <p className="text-gray-600">
-          {hasAnyData ? "Here's your health overview" : "Start tracking to see your health insights"}
-        </p>
-      </div>
-
       {/* Key Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card className="bg-gradient-to-br from-pink-100 to-pink-50 border-pink-200">

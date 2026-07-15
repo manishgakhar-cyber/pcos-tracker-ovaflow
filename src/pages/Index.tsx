@@ -146,33 +146,40 @@ const Index = () => {
           <meta property="og:title" content="PCOS Assessment OvaFlow" />
           <meta property="og:url" content="/dashboard" />
         </Helmet>
+        <header className="sticky top-0 z-40 bg-gradient-to-br from-pink-50 to-purple-50/95 backdrop-blur border-b border-purple-100">
+          <div className="container mx-auto px-4 py-3 flex items-center justify-between gap-2">
+            {showAssessmentForm && hasCompletedAssessment ? (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowAssessmentForm(false)}
+                className="shrink-0"
+              >
+                ← Back
+              </Button>
+            ) : (
+              <div className="w-16" />
+            )}
+            <h1 className="text-base sm:text-xl font-bold text-purple-800 truncate text-center">
+              OvaFlow
+            </h1>
+            <Button variant="outline" size="sm" onClick={handleLogout} className="shrink-0">
+              Logout
+            </Button>
+          </div>
+        </header>
         <main className="container mx-auto px-4 py-6">
-          <div className="text-center mb-8">
-            <div className="flex justify-between items-center mb-2">
-              <div className="flex-1">
-                {showAssessmentForm && hasCompletedAssessment && (
-                  <Button 
-                    variant="ghost" 
-                    onClick={() => setShowAssessmentForm(false)}
-                  >
-                    ← Back to Dashboard
-                  </Button>
-                )}
-              </div>
-              <h1 className="text-4xl font-bold text-purple-800 flex-1">OvaFlow Your PCOS Dashboard</h1>
-              <div className="flex-1 flex justify-end">
-                <Button variant="outline" onClick={handleLogout}>
-                  Logout
-                </Button>
-              </div>
-            </div>
-            <p className="text-purple-600">
+          <div className="text-center mb-6">
+            <h2 className="text-2xl sm:text-3xl font-bold text-purple-800 mb-2">
+              PCOS Assessment
+            </h2>
+            <p className="text-purple-600 text-sm sm:text-base">
               {showAssessmentForm && hasCompletedAssessment 
                 ? 'Update your PCOS risk assessment' 
                 : 'Complete your PCOS risk assessment to get started'}
             </p>
             {userName && (
-              <p className="text-sm text-purple-500 mt-1">Welcome, {userName}!</p>
+              <p className="text-sm text-purple-500 mt-1">Hi, {userName}!</p>
             )}
           </div>
           
@@ -196,26 +203,26 @@ const Index = () => {
         <meta property="og:url" content="/dashboard" />
       </Helmet>
       <Tutorial open={showTutorial} onClose={handleCloseTutorial} />
-      
-      <main className="container mx-auto px-4 py-6">
-        <div className="text-center mb-8">
-          <div className="flex justify-between items-center mb-2">
-            <div className="flex-1" />
-            <h1 className="text-4xl font-bold text-purple-800 flex-1">OvaFlow Your PCOS Dashboard</h1>
-            <div className="flex-1 flex justify-end">
-              <Button variant="outline" onClick={handleLogout}>
-                Logout
-              </Button>
-            </div>
+
+      <header className="sticky top-0 z-40 bg-gradient-to-br from-pink-50 to-purple-50/95 backdrop-blur border-b border-purple-100">
+        <div className="container mx-auto px-4 py-3 flex items-center justify-between gap-2">
+          <div className="min-w-0 flex-1">
+            <h1 className="text-base sm:text-xl font-bold text-purple-800 truncate">
+              OvaFlow Dashboard
+            </h1>
+            {userName && (
+              <p className="text-xs text-purple-500 truncate">Hi, {userName}!</p>
+            )}
           </div>
-          <p className="text-purple-600">Your comprehensive PCOS and cycle tracking companion</p>
-          {userName && (
-            <p className="text-sm text-purple-500 mt-1">Welcome, {userName}!</p>
-          )}
+          <Button variant="outline" size="sm" onClick={handleLogout} className="shrink-0">
+            Logout
+          </Button>
         </div>
-        
+      </header>
+
+      <main className="container mx-auto px-4 py-6">
         <Tabs defaultValue="dashboard" className="w-full">
-          <TabsList className="grid w-full grid-cols-4 mb-6">
+          <TabsList className="grid w-full grid-cols-4 mb-6 h-auto">
             <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
             <TabsTrigger value="tracker">Tracker</TabsTrigger>
             <TabsTrigger value="calendar">Calendar</TabsTrigger>
