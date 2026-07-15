@@ -276,25 +276,23 @@ export const PCOSAssessmentForm = ({ onComplete, isEdit = false, guestMode = fal
         additionalNotes: formData.additionalNotes
       };
 
-      const { data: analysisData, error: analysisError } = await supabase.functions.invoke(
-        'analyze-pcos-assessment',
-        {
-          body: { assessmentData: assessmentPayload }
+      // Try the AI analysis, but never let it block saving the assessment.
+      let riskScore = 0;
+      let riskLevel: string = 'Low';
+      try {
+        const { data: analysisData, error: analysisError } = await supabase.functions.invoke(
+          'analyze-pcos-assessment',
+          { body: { assessmentData: assessmentPayload } }
+        );
+        if (analysisError) {
+          console.error('Analysis error (continuing with fallback):', analysisError);
+        } else if (analysisData) {
+          riskScore = analysisData.riskScore ?? 0;
+          riskLevel = analysisData.riskLevel ?? 'Low';
         }
-      );
-
-      if (analysisError) {
-        console.error('Analysis error:', analysisError);
-        throw analysisError;
+      } catch (analysisErr) {
+        console.error('Analysis threw (continuing with fallback):', analysisErr);
       }
-
-      if (!analysisData) {
-        console.error('No analysis data returned');
-        throw new Error('No analysis data returned from AI');
-      }
-
-      console.log('Analysis data:', analysisData);
-      const { riskScore, riskLevel } = analysisData;
 
       // If editing, update existing assessment, otherwise insert new one
       if (isEdit) {
