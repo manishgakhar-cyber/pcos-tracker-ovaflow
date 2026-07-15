@@ -226,9 +226,12 @@ const Index = () => {
             ) : (
               <div className="w-16" />
             )}
-            <h1 className="text-base sm:text-xl font-bold text-purple-800 truncate text-center">
-              OvaFlow
-            </h1>
+            <div className="flex items-center gap-2 min-w-0">
+              <img src={ovaflowLogo.url} alt="OvaFlow logo" className="w-8 h-8 rounded-full shrink-0" />
+              <h1 className="text-base sm:text-xl font-bold text-purple-800 truncate text-center">
+                OvaFlow
+              </h1>
+            </div>
             <Button variant="outline" size="sm" onClick={handleLogout} className="shrink-0">
               Logout
             </Button>
@@ -272,13 +275,16 @@ const Index = () => {
 
       <header className="sticky top-0 z-40 bg-gradient-to-br from-pink-50 to-purple-50/95 backdrop-blur border-b border-purple-100">
         <div className="container mx-auto px-4 py-3 flex items-center justify-between gap-2">
-          <div className="min-w-0 flex-1">
-            <h1 className="text-base sm:text-xl font-bold text-purple-800 truncate">
-              OvaFlow Dashboard
-            </h1>
-            {userName && (
-              <p className="text-xs text-purple-500 truncate">Hi, {userName}!</p>
-            )}
+          <div className="min-w-0 flex-1 flex items-center gap-2">
+            <img src={ovaflowLogo.url} alt="OvaFlow logo" className="w-9 h-9 rounded-full shrink-0" />
+            <div className="min-w-0">
+              <h1 className="text-base sm:text-xl font-bold text-purple-800 truncate">
+                OvaFlow Dashboard
+              </h1>
+              {userName && (
+                <p className="text-xs text-purple-500 truncate">Hi, {userName}!</p>
+              )}
+            </div>
           </div>
           <Button variant="outline" size="sm" onClick={handleLogout} className="shrink-0">
             Logout
