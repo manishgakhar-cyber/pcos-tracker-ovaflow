@@ -475,6 +475,34 @@ export const SymptomTracker = () => {
             <CardTitle className="text-lg">Log Symptoms</CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
+            <div>
+              <Label className="text-sm font-medium">Date</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-full justify-start text-left font-normal mt-2",
+                      !selectedDate && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {selectedDate ? format(selectedDate, "PPP") : "Pick a date"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={selectedDate}
+                    onSelect={setSelectedDate}
+                    disabled={(date) => date > new Date() || date < new Date(new Date().setFullYear(new Date().getFullYear() - 2))}
+                    initialFocus
+                    className="pointer-events-auto"
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+
             {Object.entries(symptomCategories).map(([category, symptoms]) => (
               <div key={category}>
                 <h3 className="font-medium text-gray-900 mb-3">{category}</h3>
