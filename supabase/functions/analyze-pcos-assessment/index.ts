@@ -9,23 +9,23 @@ const corsHeaders = {
 
 // Input validation schema
 const assessmentSchema = z.object({
-  age: z.number().int().min(10).max(100),
-  height: z.number().min(0).max(96).optional(), // inches, optional
-  weight: z.number().min(0).max(500).optional(), // lbs, optional
-  ethnicity: z.string().max(100),
-  periodFrequency: z.string().max(100),
+  age: z.number().int().min(9).max(100),
+  height: z.number().min(0).max(96).optional().nullable(),
+  weight: z.number().min(0).max(500).optional().nullable(),
+  ethnicity: z.string().max(100).optional().default(''),
+  periodFrequency: z.string().max(100).optional().default(''),
   cycleLength: z.number().int().min(14).max(60),
-  flowIntensity: z.string().max(50),
-  symptoms: z.array(z.string()).max(20),
-  acneSeverity: z.string().max(50),
-  hairGrowth: z.string().max(50),
-  hairLoss: z.string().max(50),
-  weightChanges: z.string().max(50),
-  moodSymptoms: z.array(z.string()).max(20),
-  familyHistory: z.string().max(50),
-  medications: z.string().max(500).optional(),
-  additionalNotes: z.string().max(1000).optional(),
-});
+  flowIntensity: z.string().max(100).optional().default(''),
+  symptoms: z.array(z.string()).max(50).optional().default([]),
+  acneSeverity: z.string().max(100).optional().default(''),
+  hairGrowth: z.string().max(100).optional().default(''),
+  hairLoss: z.string().max(100).optional().default(''),
+  weightChanges: z.string().max(100).optional().default(''),
+  moodSymptoms: z.array(z.string()).max(50).optional().default([]),
+  familyHistory: z.string().max(100).optional().default(''),
+  medications: z.string().max(1000).optional().default(''),
+  additionalNotes: z.string().max(2000).optional().default(''),
+}).passthrough();
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
