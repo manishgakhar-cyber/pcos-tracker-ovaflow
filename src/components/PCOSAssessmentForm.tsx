@@ -327,9 +327,8 @@ export const PCOSAssessmentForm = ({ onComplete, isEdit = false, guestMode = fal
           : "Your PCOS risk assessment has been saved successfully.",
       });
       
-      if (onComplete) {
-        onComplete();
-      }
+      // Show results screen before returning to parent
+      setShowResults(true);
     } catch (error) {
       console.error('Assessment submission error:', error);
       const errorMessage = error instanceof Error ? error.message : 'Failed to save assessment. Please try again.';
