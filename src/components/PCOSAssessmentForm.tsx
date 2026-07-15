@@ -204,12 +204,6 @@ export const PCOSAssessmentForm = ({ onComplete, isEdit = false, guestMode = fal
           const field = err.path[0] as keyof AssessmentData;
           form.setError(field, { message: err.message });
         });
-        
-        toast({
-          title: "Validation Error",
-          description: "Please fix the errors before continuing.",
-          variant: "destructive",
-        });
       }
       isValid = false;
     }
@@ -234,11 +228,6 @@ export const PCOSAssessmentForm = ({ onComplete, isEdit = false, guestMode = fal
     const isValid = await form.trigger();
     
     if (!isValid) {
-      toast({
-        title: "Validation Error",
-        description: "Please check all fields and correct any errors.",
-        variant: "destructive",
-      });
       return;
     }
 
@@ -266,12 +255,6 @@ export const PCOSAssessmentForm = ({ onComplete, isEdit = false, guestMode = fal
       if (!user) {
         throw new Error('No authenticated user found');
       }
-
-      // Use AI to analyze the assessment
-      toast({
-        title: "Analyzing...",
-        description: "Our AI is analyzing your assessment data with medical databases...",
-      });
 
       // Convert string values to numbers for the edge function
       const assessmentPayload = {
