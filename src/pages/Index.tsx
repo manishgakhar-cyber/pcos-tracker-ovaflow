@@ -12,6 +12,7 @@ import { Tutorial } from '@/components/Tutorial';
 import type { User } from '@supabase/supabase-js';
 import { Helmet } from 'react-helmet-async';
 import ovaflowLogo from '@/assets/ovaflow-logo.png.asset.json';
+import { computeLocalRisk } from '@/lib/pcosRisk';
 
 const TUTORIAL_KEY = 'cyclewise_tutorial_completed';
 const GUEST_ASSESSMENT_KEY = 'ovaflow_guest_assessment';
@@ -41,16 +42,19 @@ const persistGuestAssessmentIfAny = async (userId: string) => {
       additionalNotes: formData.additionalNotes,
     };
 
-    let riskScore = 0;
-    let riskLevel = 'low';
+    const localRisk = computeLocalRisk(assessmentPayload as any);
+    let riskScore = localRisk.riskScore;
+    let riskLevel: string = localRisk.riskLevel;
     try {
       const { data: analysisData } = await supabase.functions.invoke(
         'analyze-pcos-assessment',
         { body: { assessmentData: assessmentPayload } }
       );
       if (analysisData) {
-        riskScore = analysisData.riskScore ?? 0;
-        riskLevel = analysisData.riskLevel ?? 'low';
+        if (typeof analysisData.riskScore === 'number' && analysisData.riskScore > 0) {
+          riskScore = analysisData.riskScore;
+        }
+        if (analysisData.riskLevel) riskLevel = analysisData.riskLevel;
       }
     } catch (e) {
       console.error('AI analysis failed, saving assessment without score', e);
