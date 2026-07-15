@@ -135,8 +135,8 @@ const Index = () => {
     );
   }
 
-  // Show assessment form if not completed OR if user wants to edit
-  if (hasCompletedAssessment === false || showAssessmentForm) {
+  // Show assessment form only when the user explicitly chooses to edit/retake it.
+  if (showAssessmentForm) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-pink-50 to-purple-50">
         <Helmet>
