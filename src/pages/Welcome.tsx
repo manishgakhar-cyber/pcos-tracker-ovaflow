@@ -83,22 +83,17 @@ const Welcome = () => {
         <meta property="og:description" content="Take a free PCOS risk assessment and start tracking your cycle." />
         <meta property="og:url" content="/" />
       </Helmet>
-      <main className="container mx-auto px-4 pt-4 pb-8">
+      <main className="container mx-auto px-4 pt-6 pb-8">
         {/* Landing header */}
-        <div className="text-center mb-6">
+        <div className="text-center mb-5">
           <div className="flex items-center justify-center gap-3 mb-3">
-            <Heart className="w-10 h-10 sm:w-12 sm:h-12 text-pink-500" />
-            <h1 className="text-4xl sm:text-6xl font-bold tracking-tight bg-gradient-to-r from-purple-700 to-pink-600 bg-clip-text text-transparent">
+            <Heart className="w-12 h-12 sm:w-16 sm:h-16 text-pink-500" />
+            <h1 className="text-5xl sm:text-7xl font-bold tracking-tight bg-gradient-to-r from-purple-700 to-pink-600 bg-clip-text text-transparent">
               OvaFlow
             </h1>
           </div>
-          <p className="text-base sm:text-lg text-purple-800 font-medium max-w-2xl mx-auto">
-            Your all-in-one PCOS risk check and period tracker.
-          </p>
-          <p className="text-sm sm:text-base text-gray-600 max-w-2xl mx-auto mt-1">
-            Start with a quick PCOS assessment. Once you finish, OvaFlow turns into
-            your personal period tracker — logging cycles, predicting your next period,
-            tracking symptoms, and giving you insights about your hormonal health.
+          <p className="text-base sm:text-lg text-purple-800 font-medium max-w-xl mx-auto leading-snug">
+            Quick PCOS check, then track your cycle and symptoms.
           </p>
           <Button
             variant="link"
