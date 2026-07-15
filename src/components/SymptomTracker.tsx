@@ -249,10 +249,10 @@ export const SymptomTracker = () => {
       }
 
       toast({
-        title: "Period logged!",
+        title: "Saved to your calendar",
         description: periodEndDate 
-          ? `Logged ${flowIntensity} flow from ${format(periodStartDate, 'PPP')} to ${format(periodEndDate, 'PPP')}`
-          : `Logged ${flowIntensity} flow for ${format(periodStartDate, 'PPP')}`,
+          ? `Period (${flowIntensity} flow) logged from ${format(periodStartDate, 'PPP')} to ${format(periodEndDate, 'PPP')}.`
+          : `Period (${flowIntensity} flow) logged for ${format(periodStartDate, 'PPP')}.`,
       });
       
       setPeriodStartDate(undefined);
@@ -339,8 +339,8 @@ export const SymptomTracker = () => {
       }
 
       toast({
-        title: "Symptoms logged!",
-        description: `Logged ${selectedSymptoms.length} symptoms for ${format(selectedDate, 'PPP')}`,
+        title: "Saved to your calendar",
+        description: `${selectedSymptoms.length} symptom${selectedSymptoms.length === 1 ? '' : 's'} logged for ${format(selectedDate, 'PPP')}.`,
       });
       
       // Reset form
