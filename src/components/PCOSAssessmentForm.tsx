@@ -774,7 +774,7 @@ export const PCOSAssessmentForm = ({ onComplete, isEdit = false, guestMode = fal
         <div className="max-w-2xl mx-auto">
         <div className="text-center mb-6">
           <h2 className="text-3xl font-bold bg-gradient-to-r from-pink-600 to-purple-600 bg-clip-text text-transparent mb-2">
-            PCOS Risk Assessment
+            Start PCOS Risk Assessment
           </h2>
           <p className="text-gray-600">
             Help us understand your symptoms to provide personalized insights

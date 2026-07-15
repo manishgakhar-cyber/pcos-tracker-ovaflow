@@ -105,21 +105,21 @@ const Welcome = () => {
         </div>
 
         {/* Feature highlights */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 max-w-3xl mx-auto mb-6">
-          <div className="rounded-xl bg-white/70 backdrop-blur border border-purple-100 p-3 text-center">
-            <Sparkles className="w-5 h-5 text-pink-500 mx-auto mb-1" />
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-3xl mx-auto mb-6">
+          <div className="text-center">
+            <Sparkles className="w-6 h-6 text-pink-500 mx-auto mb-2" />
             <p className="text-sm font-semibold text-purple-800">PCOS Risk Check</p>
-            <p className="text-xs text-gray-600">Personalized insights in minutes</p>
+            <p className="text-xs text-gray-600 leading-tight">Personalized insights in minutes</p>
           </div>
-          <div className="rounded-xl bg-white/70 backdrop-blur border border-purple-100 p-3 text-center">
-            <CalendarHeart className="w-5 h-5 text-pink-500 mx-auto mb-1" />
+          <div className="text-center">
+            <CalendarHeart className="w-6 h-6 text-pink-500 mx-auto mb-2" />
             <p className="text-sm font-semibold text-purple-800">Period Tracking</p>
-            <p className="text-xs text-gray-600">Log cycles and predict the next one</p>
+            <p className="text-xs text-gray-600 leading-tight">Log cycles and predict the next one</p>
           </div>
-          <div className="rounded-xl bg-white/70 backdrop-blur border border-purple-100 p-3 text-center">
-            <LineChart className="w-5 h-5 text-pink-500 mx-auto mb-1" />
+          <div className="text-center">
+            <LineChart className="w-6 h-6 text-pink-500 mx-auto mb-2" />
             <p className="text-sm font-semibold text-purple-800">Symptom Insights</p>
-            <p className="text-xs text-gray-600">Spot patterns in your hormonal health</p>
+            <p className="text-xs text-gray-600 leading-tight">Spot patterns in your hormonal health</p>
           </div>
         </div>
 
