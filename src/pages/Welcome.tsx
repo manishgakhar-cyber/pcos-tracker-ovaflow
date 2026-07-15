@@ -42,6 +42,7 @@ const Welcome = () => {
     setShowResults(true);
     try {
       localStorage.setItem('ovaflow_assessment_completed', 'true');
+      localStorage.setItem('ovaflow_guest_assessment', JSON.stringify(data));
     } catch {}
   };
 

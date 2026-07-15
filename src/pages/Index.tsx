@@ -11,8 +11,72 @@ import { Education } from '@/components/Education';
 import { Tutorial } from '@/components/Tutorial';
 import type { User } from '@supabase/supabase-js';
 import { Helmet } from 'react-helmet-async';
+import ovaflowLogo from '@/assets/ovaflow-logo.png.asset.json';
 
 const TUTORIAL_KEY = 'cyclewise_tutorial_completed';
+const GUEST_ASSESSMENT_KEY = 'ovaflow_guest_assessment';
+
+const persistGuestAssessmentIfAny = async (userId: string) => {
+  try {
+    const raw = localStorage.getItem(GUEST_ASSESSMENT_KEY);
+    if (!raw) return false;
+    const formData = JSON.parse(raw);
+
+    const assessmentPayload = {
+      age: Number(formData.age),
+      height: formData.height ? Number(formData.height) : 0,
+      weight: formData.weight ? Number(formData.weight) : 0,
+      ethnicity: formData.ethnicity,
+      periodFrequency: formData.periodFrequency,
+      cycleLength: Number(formData.cycleLength),
+      flowIntensity: formData.flowIntensity,
+      symptoms: formData.symptoms,
+      acneSeverity: formData.acneSeverity,
+      hairGrowth: formData.hairGrowth,
+      hairLoss: formData.hairLoss,
+      weightChanges: formData.weightChanges,
+      moodSymptoms: formData.moodSymptoms,
+      familyHistory: formData.familyHistory,
+      medications: formData.medications,
+      additionalNotes: formData.additionalNotes,
+    };
+
+    let riskScore = 0;
+    let riskLevel = 'low';
+    try {
+      const { data: analysisData } = await supabase.functions.invoke(
+        'analyze-pcos-assessment',
+        { body: { assessmentData: assessmentPayload } }
+      );
+      if (analysisData) {
+        riskScore = analysisData.riskScore ?? 0;
+        riskLevel = analysisData.riskLevel ?? 'low';
+      }
+    } catch (e) {
+      console.error('AI analysis failed, saving assessment without score', e);
+    }
+
+    const { error: insertError } = await supabase
+      .from('pcos_assessments')
+      .insert([{
+        user_id: userId,
+        assessment_data: formData as any,
+        risk_score: riskScore,
+        risk_level: riskLevel,
+      }]);
+
+    if (insertError) {
+      console.error('Failed to persist guest assessment', insertError);
+      return false;
+    }
+
+    localStorage.removeItem(GUEST_ASSESSMENT_KEY);
+    return true;
+  } catch (e) {
+    console.error('persistGuestAssessmentIfAny error', e);
+    return false;
+  }
+};
 
 const Index = () => {
   const navigate = useNavigate();
@@ -30,6 +94,7 @@ const Index = () => {
       
       if (session?.user) {
         await fetchUserName(session.user.id);
+        await persistGuestAssessmentIfAny(session.user.id);
         await checkAssessmentStatus(session.user.id);
         
         // Check if user has seen tutorial
@@ -49,6 +114,7 @@ const Index = () => {
       
       if (session?.user) {
         await fetchUserName(session.user.id);
+        await persistGuestAssessmentIfAny(session.user.id);
         await checkAssessmentStatus(session.user.id);
         
         // Check if user has seen tutorial
@@ -160,9 +226,12 @@ const Index = () => {
             ) : (
               <div className="w-16" />
             )}
-            <h1 className="text-base sm:text-xl font-bold text-purple-800 truncate text-center">
-              OvaFlow
-            </h1>
+            <div className="flex items-center gap-2 min-w-0">
+              <img src={ovaflowLogo.url} alt="OvaFlow logo" className="w-8 h-8 rounded-full shrink-0" />
+              <h1 className="text-base sm:text-xl font-bold text-purple-800 truncate text-center">
+                OvaFlow
+              </h1>
+            </div>
             <Button variant="outline" size="sm" onClick={handleLogout} className="shrink-0">
               Logout
             </Button>
@@ -206,13 +275,16 @@ const Index = () => {
 
       <header className="sticky top-0 z-40 bg-gradient-to-br from-pink-50 to-purple-50/95 backdrop-blur border-b border-purple-100">
         <div className="container mx-auto px-4 py-3 flex items-center justify-between gap-2">
-          <div className="min-w-0 flex-1">
-            <h1 className="text-base sm:text-xl font-bold text-purple-800 truncate">
-              OvaFlow Dashboard
-            </h1>
-            {userName && (
-              <p className="text-xs text-purple-500 truncate">Hi, {userName}!</p>
-            )}
+          <div className="min-w-0 flex-1 flex items-center gap-2">
+            <img src={ovaflowLogo.url} alt="OvaFlow logo" className="w-9 h-9 rounded-full shrink-0" />
+            <div className="min-w-0">
+              <h1 className="text-base sm:text-xl font-bold text-purple-800 truncate">
+                OvaFlow Dashboard
+              </h1>
+              {userName && (
+                <p className="text-xs text-purple-500 truncate">Hi, {userName}!</p>
+              )}
+            </div>
           </div>
           <Button variant="outline" size="sm" onClick={handleLogout} className="shrink-0">
             Logout
