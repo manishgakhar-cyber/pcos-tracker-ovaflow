@@ -165,8 +165,22 @@ export const Dashboard = ({ onEditAssessment }: { onEditAssessment?: () => void 
     return { level: 'High', color: 'bg-red-500' };
   };
 
-  const riskScore = riskData?.risk_score || null;
-  const riskLevel = riskScore ? getRiskLevel(riskScore) : null;
+  // Prefer stored risk score; if missing/zero, compute locally from the raw
+  // assessment data so the dashboard always reflects the user's answers.
+  let riskScore: number | null = null;
+  if (riskData?.risk_score && riskData.risk_score > 0) {
+    riskScore = riskData.risk_score;
+  } else if (riskData?.assessment_data) {
+    try {
+      // Lazy import to keep bundle small; require is not available in ESM,
+      // so use the top-level import already added below.
+      const { computeLocalRisk } = require('@/lib/pcosRisk');
+      riskScore = computeLocalRisk(riskData.assessment_data).riskScore;
+    } catch {
+      riskScore = null;
+    }
+  }
+  const riskLevel = riskScore !== null ? getRiskLevel(riskScore) : null;
 
   const hasAnyData = (Array.isArray(cycleData) && cycleData.length > 0) || riskData || recentSymptoms.length > 0;
   
