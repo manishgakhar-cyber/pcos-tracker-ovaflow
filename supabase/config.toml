@@ -1,1 +1,4 @@
 project_id = "wwxcvglikjtwpzjrebyd"
+
+[functions.analyze-pcos-assessment]
+verify_jwt = false
